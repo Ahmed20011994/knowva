@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, MessageCircle, X, Copy, ChevronDown, Trash2 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/libs/auth";
 
 interface Agent {
   id: string;
@@ -36,9 +37,10 @@ export default function AgentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const router = useRouter();
+  const { user } = useAuth();
 
   const API_URL = "http://135.222.251.229:8000";
-  const USER_ID = "user-123"; // This should come from your auth context/state
+  const USER_ID = user?.id || "user-123"; // This should come from your auth context/state
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
