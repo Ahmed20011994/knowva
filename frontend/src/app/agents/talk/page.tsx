@@ -1,105 +1,74 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
-import {
-  Zap,
-  ChevronDown,
-  ArrowRight,
-  Plus,
-  X,
-  Edit3,
-  Share2,
-  Download,
-  Loader2,
-  AlertTriangle,
-  TrendingUp,
-} from "lucide-react";
-import { useAllowedIntegrations } from "@/hooks/useAllowedIntegrations";
+import { ArrowRight, ArrowLeft, Bot, User } from "lucide-react";
 
-// Types
+interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  identifier: string;
+  icon: string;
+  integration: string;
+  llm: string;
+  custom_knowledge: string;
+  exposure: boolean;
+  greeting: string;
+  prompt: string;
+}
+
 interface ChatMessage {
-  id: number;
-  type: "user" | "ai";
+  id: string;
+  role: "user" | "assistant";
   content: string;
-  sources?: number;
-  followUps?: string[];
-  isThinking?: boolean;
+  timestamp: string;
+  servers_used?: string[];
+  tools_called?: string[];
 }
-interface ChatSession {
-  id: number;
-  title: string;
+
+interface AgentConversation {
+  id: string;
+  agent_id: string;
+  user_id: string;
   messages: ChatMessage[];
-  conversationId?: string;
+  status: string;
+  created_at: string;
 }
 
-interface CustomerSupportData {
-  executive_summary: string[];
-  kpis: {
-    total_tickets: number;
-    by_status: {
-      open: number;
-      pending: number;
-    };
-  };
-  themes: Array<{
-    theme: string;
-    count: number;
-    sample_ticket_ids: number[];
-  }>;
-  bottlenecks: Array<{
-    issue: string;
-    evidence: string;
-    affected_ticket_ids: number[];
-  }>;
-  recommendations: Array<{
-    action: string;
-    owner: string;
-    eta_days: number;
-    impact: string;
-    effort: string;
-  }>;
-}
-
-// ChatInput
+// Chat Input Component
 const ChatInput: React.FC<{
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   placeholder?: string;
-}> = ({ onSendMessage, isLoading, placeholder = "How can I help?" }) => {
-  const [isIntegrationsDropdownOpen, setIsIntegrationsDropdownOpen] =
-    useState(false);
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
+}> = ({ onSendMessage, isLoading, placeholder = "Type your message..." }) => {
   const [prompt, setPrompt] = useState("");
-
-  const { integrations: integrationsList, loading: integrationsLoading } = useAllowedIntegrations();
-
-  // Set initial selected integrations when they load
-  useEffect(() => {
-    if (integrationsList.length > 0 && selectedIntegrations.length === 0) {
-      setSelectedIntegrations([integrationsList[0]]);
-    }
-  }, [integrationsList, selectedIntegrations.length]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isLoading) {
       onSendMessage(prompt);
       setPrompt("");
-      setIsIntegrationsDropdownOpen(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative w-full max-w-3xl mx-auto">
-      <div className="relative rounded-lg border border-gray-300 bg-white">
+    <form onSubmit={handleSubmit} className="relative w-full max-w-4xl mx-auto">
+      <div className="relative rounded-lg border border-gray-300 bg-white shadow-sm">
         <textarea
           placeholder={placeholder}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full px-4 py-3 pr-32 text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none resize-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+          }}
+          className="w-full px-4 py-3 pr-16 text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none resize-none min-h-[50px] max-h-32"
           rows={1}
+          disabled={isLoading}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           <button
@@ -119,621 +88,317 @@ const ChatInput: React.FC<{
   );
 };
 
-// Sidebar
-const ChatSidebar: React.FC<{
-  sessions: ChatSession[];
-  activeSessionId: number;
-  onSessionSelect: (id: number) => void;
-  onNewChat: () => void;
-}> = ({ sessions, activeSessionId, onSessionSelect, onNewChat }) => (
-  <aside className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-    <div className="flex-1 overflow-y-auto p-3">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-        Chats
-      </h3>
-      <div className="space-y-1">
-        {sessions.map((session) => (
-          <button
-            key={session.id}
-            onClick={() => onSessionSelect(session.id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-              activeSessionId === session.id
-                ? "bg-purple-100 text-purple-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            {session.title}
-          </button>
-        ))}
-      </div>
-      <button
-        onClick={onNewChat}
-        className="w-full mt-3 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg text-sm font-medium flex items-center gap-2"
-      >
-        <Plus size={16} /> New Chat
-      </button>
-    </div>
-  </aside>
-);
-
-// Customer Support Insights
-const CustomerSupportInsights: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  hasMessages: boolean;
-  data: CustomerSupportData | null;
-  loading: boolean;
-}> = ({ isOpen, onClose, hasMessages, data, loading }) => {
-  if (!hasMessages) return null;
-
-  return (
-    <aside
-      className={`w-96 bg-purple-50 border-l border-purple-200 p-6 flex-shrink-0 h-full overflow-y-auto ${
-        isOpen ? "block" : "hidden lg:block"
-      }`}
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-purple-900 flex items-center gap-2">
-          <Zap size={18} className="text-purple-600" />
-          Support Insights
-        </h3>
-        <button onClick={onClose} className="lg:hidden text-purple-600">
-          <X size={20} />
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-8 space-y-4">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-purple-200 rounded-full animate-pulse"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
-          </div>
-          <div className="text-center">
-            <div className="text-purple-700 font-medium mb-2">
-              Analyzing Support Data
-            </div>
-            <div className="flex space-x-1 justify-center">
-              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-              <div
-                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-            </div>
-            <div className="text-xs text-purple-500 mt-2 animate-pulse">
-              Processing tickets & insights...
-            </div>
-          </div>
-        </div>
-      ) : data ? (
-        <div className="space-y-4 text-sm">
-          {/* KPIs */}
-          <div className="p-3 bg-white rounded-lg border border-purple-100">
-            <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-1">
-              <TrendingUp size={14} />
-              Key Metrics
-            </h4>
-            <div className="space-y-1 text-gray-700">
-              <div>
-                Total Tickets:{" "}
-                <span className="font-medium">{data.kpis.total_tickets}</span>
-              </div>
-              <div>
-                Open:{" "}
-                <span className="font-medium text-red-600">
-                  {data.kpis.by_status.open}
-                </span>
-              </div>
-              <div>
-                Pending:{" "}
-                <span className="font-medium text-yellow-600">
-                  {data.kpis.by_status.pending}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Top Issues */}
-          {data.themes.length > 0 && (
-            <div className="p-3 bg-white rounded-lg border border-purple-100">
-              <h4 className="font-medium text-purple-900 mb-2">Top Issues</h4>
-              <div className="space-y-2">
-                {data.themes.slice(0, 3).map((theme, index) => (
-                  <div key={index} className="text-gray-700">
-                    <div className="font-medium">{theme.theme}</div>
-                    <div className="text-xs text-gray-500">
-                      {theme.count} tickets
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      IDs: {theme.sample_ticket_ids.slice(0, 3).join(", ")}
-                      {theme.sample_ticket_ids.length > 3 && "..."}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Critical Bottlenecks */}
-          {data.bottlenecks.length > 0 && (
-            <div className="p-3 bg-white rounded-lg border border-red-100 bg-red-50">
-              <h4 className="font-medium text-red-900 mb-2 flex items-center gap-1">
-                <AlertTriangle size={14} />
-                Critical Issues
-              </h4>
-              <div className="space-y-2">
-                {data.bottlenecks.slice(0, 2).map((bottleneck, index) => (
-                  <div key={index} className="text-red-800 text-xs">
-                    <div className="font-medium">{bottleneck.issue}</div>
-                    <div className="text-red-600 mt-1">
-                      {bottleneck.evidence}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top Recommendations */}
-          {data.recommendations.length > 0 && (
-            <div className="p-3 bg-white rounded-lg border border-green-100 bg-green-50">
-              <h4 className="font-medium text-green-900 mb-2">
-                Priority Actions
-              </h4>
-              <div className="space-y-2">
-                {data.recommendations
-                  .filter(
-                    (rec) => rec.impact === "high" || rec.impact === "medium"
-                  )
-                  .slice(0, 2)
-                  .map((rec, index) => (
-                    <div key={index} className="text-green-800 text-xs">
-                      <div className="font-medium">{rec.action}</div>
-                      <div className="text-green-600 mt-1">
-                        {rec.owner} • {rec.eta_days} days • {rec.impact} impact
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Executive Summary */}
-          {data.executive_summary.length > 0 && (
-            <div className="p-3 bg-white rounded-lg border border-purple-100">
-              <h4 className="font-medium text-purple-900 mb-2">Summary</h4>
-              <div className="space-y-1">
-                {data.executive_summary.slice(0, 2).map((summary, index) => (
-                  <div key={index} className="text-gray-700 text-xs">
-                    • {summary}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-gray-500">
-          <p>No support data available</p>
-        </div>
-      )}
-    </aside>
-  );
-};
-
-// Main Page Component
-function AIChatbotPageContent() {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
-
+// Main Component
+function AgentTalkPageContent() {
   const searchParams = useSearchParams();
-  const [customerSupportData, setCustomerSupportData] =
-    useState<CustomerSupportData | null>(null);
-  const [isLoadingSupportData, setIsLoadingSupportData] = useState(false);
+  const router = useRouter();
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [conversation, setConversation] = useState<AgentConversation | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAgent, setIsLoadingAgent] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeSession = sessions.find((s) => s.id === activeSessionId);
-  const hasMessages = !!(activeSession && activeSession.messages.length > 0);
-
-  const suggestions = [
-    "What are the recent support tickets?",
-    "Generate a roadmap",
-  ];
-
-  const API_URL = "http://135.222.251.229:8000";
+  const API_URL = "http://localhost:8000";
   const USER_ID = "user-123"; // This should come from your auth context/state
 
-  // Fetch user conversations on component mount
+  const agentId = searchParams.get("agent_id");
+  const conversationId = searchParams.get("conversation_id");
+
+  // Load agent and conversation data
   useEffect(() => {
-    const fetchUserConversations = async () => {
-      setIsLoadingConversations(true);
+    const loadData = async () => {
       try {
-        const response = await fetch(`${API_URL}/users/${USER_ID}/conversations`);
-        if (response.ok) {
-          const conversations = await response.json();
+        setIsLoadingAgent(true);
+        setError(null);
 
-          // Transform database conversations to ChatSession format
-          const transformedSessions: ChatSession[] = conversations.map((conv: any, index: number) => {
-            // Generate a title from the first user message or use a default
-            let title = `Chat ${index + 1}`;
-            if (conv.messages && conv.messages.length > 0) {
-              const firstUserMessage = conv.messages.find((msg: any) => msg.role === 'user');
-              if (firstUserMessage) {
-                title = firstUserMessage.content.length > 50
-                  ? firstUserMessage.content.substring(0, 50) + "..."
-                  : firstUserMessage.content;
-              }
+        if (conversationId) {
+          // Load existing conversation
+          const convResponse = await fetch(`${API_URL}/agent-conversations/${conversationId}`);
+          if (convResponse.ok) {
+            const convData = await convResponse.json();
+            setConversation(convData);
+            setMessages(convData.messages || []);
+
+            // Load the agent for this conversation
+            const agentResponse = await fetch(`${API_URL}/agents/${convData.agent_id}`);
+            if (agentResponse.ok) {
+              const agentData = await agentResponse.json();
+              setAgent(agentData);
             }
+          } else {
+            setError("Conversation not found");
+          }
+        } else if (agentId) {
+          // Load agent for new conversation
+          const agentResponse = await fetch(`${API_URL}/agents/${agentId}`);
+          if (agentResponse.ok) {
+            const agentData = await agentResponse.json();
+            setAgent(agentData);
 
-            // Transform messages to ChatMessage format
-            const transformedMessages: ChatMessage[] = conv.messages.map((msg: any, msgIndex: number) => ({
-              id: msgIndex,
-              type: msg.role === 'user' ? 'user' : 'ai',
-              content: msg.content,
-              sources: msg.sources,
-              followUps: msg.followUps,
-              isThinking: false
-            }));
-
-            return {
-              id: parseInt(conv.id) || index,
-              title: title,
-              messages: transformedMessages,
-              conversationId: conv.id
+            // Show agent's greeting as first message
+            const greetingMessage: ChatMessage = {
+              id: "greeting",
+              role: "assistant",
+              content: agentData.greeting || "Hello! How can I help you today?",
+              timestamp: new Date().toISOString(),
             };
-          });
-
-          setSessions(transformedSessions);
-
-          // Set the first session as active if we have sessions
-          if (transformedSessions.length > 0) {
-            setActiveSessionId(transformedSessions[0].id);
+            setMessages([greetingMessage]);
+          } else {
+            setError("Agent not found");
           }
         } else {
-          console.error("Failed to fetch conversations:", response.statusText);
-          // If no conversations exist, start with an empty session
-          setSessions([]);
+          setError("No agent or conversation specified");
         }
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-        // If there's an error, start with an empty session
-        setSessions([]);
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setError("Failed to load data");
       } finally {
-        setIsLoadingConversations(false);
+        setIsLoadingAgent(false);
       }
     };
 
-    fetchUserConversations();
-  }, []);
+    loadData();
+  }, [agentId, conversationId]);
 
-  // Fetch customer support data
-  useEffect(() => {
-    const fetchCustomerSupportData = async () => {
-      setIsLoadingSupportData(true);
-      try {
-        const response = await fetch(`${API_URL}/customer-support-agent`);
-        if (response.ok) {
-          const data = await response.json();
-          setCustomerSupportData(data);
-        } else {
-          console.error(
-            "Failed to fetch customer support data:",
-            response.statusText
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching customer support data:", error);
-      } finally {
-        setIsLoadingSupportData(false);
-      }
-    };
+  const handleSendMessage = async (messageContent: string) => {
+    if (!agent) return;
 
-    fetchCustomerSupportData();
-  }, []);
-
-  const handleSendMessage = async (msg: string) => {
-    if (!activeSession) return;
     setIsLoading(true);
 
     // Add user message immediately
     const userMessage: ChatMessage = {
-      id: Date.now(),
-      type: "user",
-      content: msg,
+      id: Date.now().toString(),
+      role: "user",
+      content: messageContent,
+      timestamp: new Date().toISOString(),
     };
 
-    // Add thinking message immediately after user message
+    setMessages(prev => [...prev, userMessage]);
+
+    // Add thinking indicator
     const thinkingMessage: ChatMessage = {
-      id: Date.now() + 1,
-      type: "ai",
-      content: "",
-      isThinking: true,
+      id: "thinking",
+      role: "assistant",
+      content: "...",
+      timestamp: new Date().toISOString(),
     };
-
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === activeSessionId
-          ? { ...s, messages: [...s.messages, userMessage, thinkingMessage] }
-          : s
-      )
-    );
+    setMessages(prev => [...prev, thinkingMessage]);
 
     try {
-      // Prepare request body based on whether this is first message or subsequent
-      const requestBody: {
-        query: string;
-        conversation_id?: string;
-        user_id: string;
-      } = { query: msg, user_id: USER_ID };
+      const requestBody = {
+        query: messageContent,
+        user_id: USER_ID,
+        user_email: "user@example.com", // This should come from auth
+        conversation_id: conversation?.id
+      };
 
-      // If session has conversationId, include it (for subsequent messages)
-      if (activeSession.conversationId) {
-        requestBody.conversation_id = activeSession.conversationId;
-      }
-
-      const res = await fetch(`${API_URL}/conversations/query`, {
+      const response = await fetch(`${API_URL}/agents/${agent.id}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(requestBody),
       });
 
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-      const data = await res.json();
-
-      // If this was the first message, store the conversation_id
-      if (!activeSession.conversationId && data.conversation_id) {
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.id === activeSessionId
-              ? { ...s, conversationId: data.conversation_id }
-              : s
-          )
-        );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Replace thinking message with AI response
+      const data = await response.json();
+
+      // Remove thinking message and add actual response
       const aiMessage: ChatMessage = {
-        id: Date.now() + 1,
-        type: "ai",
-        content: data.response || "No response from AI.",
-        followUps: data.followUps || [],
-        isThinking: false,
+        id: data.message.id,
+        role: "assistant",
+        content: data.response,
+        timestamp: data.message.timestamp,
+        servers_used: data.message.servers_used,
+        tools_called: data.message.tools_called,
       };
 
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId
-            ? {
-                ...s,
-                messages: s.messages.map((msg) =>
-                  msg.isThinking ? aiMessage : msg
-                ),
-              }
-            : s
-        )
-      );
+      setMessages((prev) => prev.filter((msg) => msg.id !== "thinking").concat([aiMessage]));
+
+      // Update conversation ID if this was the first message
+      if (!conversation && data.conversation_id) {
+        setConversation({
+          id: data.conversation_id,
+          agent_id: agent.id,
+          user_id: USER_ID,
+          messages: [],
+          status: "active",
+          created_at: new Date().toISOString(),
+        });
+      }
+
     } catch (err) {
-      console.error("Error calling conversations/query endpoint:", err);
+      console.error("Error sending message:", err);
 
+      // Remove thinking message and show error
       const errorMessage: ChatMessage = {
-        id: Date.now() + 1,
-        type: "ai",
-        content: "⚠️ Error: Could not reach the AI service.",
-        isThinking: false,
+        id: Date.now().toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error processing your message. Please try again.",
+        timestamp: new Date().toISOString(),
       };
 
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId
-            ? {
-                ...s,
-                messages: s.messages.map((msg) =>
-                  msg.isThinking ? errorMessage : msg
-                ),
-              }
-            : s
-        )
-      );
+      setMessages((prev) => prev.filter((msg) => msg.id !== "thinking").concat([errorMessage]));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle creating a new chat
-  const handleNewChat = () => {
-    const newSession: ChatSession = {
-      id: Date.now(),
-      title: "New Chat",
-      messages: []
-    };
-
-    setSessions([newSession, ...sessions]);
-    setActiveSessionId(newSession.id);
+  const handleGoBack = () => {
+    router.push("/agents");
   };
 
-  // Handle pre-filled query from dashboard
-  useEffect(() => {
-    const query = searchParams.get("q");
-    if (query) {
-      // Auto-send the query when page loads with a query parameter
-      setTimeout(() => {
-        handleSendMessage(query);
-      }, 500); // Small delay to ensure component is ready
-    }
-  }, [searchParams, handleSendMessage]);
+  if (isLoadingAgent) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-purple-200 rounded-full animate-spin border-t-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading agent...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={handleGoBack}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Go Back to Agents
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!agent) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-gray-600">Agent not found</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-64px)] bg-white">
-        {/* Sidebar */}
-        {isLoadingConversations ? (
-          <aside className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-3">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Chats
-              </h3>
-              <div className="space-y-1">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-full px-3 py-2 rounded-lg bg-gray-200 animate-pulse h-8"></div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        ) : (
-          <ChatSidebar
-            sessions={sessions}
-            activeSessionId={activeSessionId || 0}
-            onSessionSelect={setActiveSessionId}
-            onNewChat={handleNewChat}
-          />
-        )}
-
         {/* Chat Area */}
         <main className="flex-1 flex flex-col">
-          {!hasMessages ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
-              {/* Combined Heading and Logo */}
-              <div className="flex items-center justify-center mb-4">
-                {" "}
-                {/* Added flex, items-center, justify-center for horizontal alignment and vertical centering */}
-                <h2 className="text-4xl font-bold text-[#202020]">Meet</h2>
-                {/* Logo Image */}
-                <img
-                  src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
-                  alt="Knowva Logo"
-                  className="w-[120px] aspect-[89/20] ml-2" // Added ml-2 for spacing
-                />
+          {/* Header */}
+          <div className="border-b border-gray-200 px-6 py-4 bg-white">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleGoBack}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl">
+                  {agent.icon}
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-900">{agent.name}</h1>
+                  <p className="text-sm text-gray-500">{agent.description}</p>
+                </div>
               </div>
-              <p className="text-[#202020] text-center max-w-2xl mb-8">
-                Say hello to your connected brain. Search, explore, and
-                understand everything across your tools — all from one place.
-              </p>
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-              />
-              <div className="w-full max-w-3xl mt-8">
-                <p className="text-sm text-gray-500 mb-4">
-                  Suggestions to get started
-                </p>
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSendMessage(s)}
-                    className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-purple-600 mb-2"
-                  >
-                    {s}
-                  </button>
-                ))}
+
+              <div className="ml-auto">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  {agent.integration}
+                </span>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-                {activeSession?.messages.map((msg) =>
-                  msg.type === "user" ? (
-                    <div key={msg.id} className="flex justify-end">
-                      <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-2xl">
-                        <p className="text-gray-800 whitespace-pre-wrap">
-                          {msg.content}
-                        </p>
-                      </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            {messages.map((message, index) => (
+              <div key={message.id || index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot size={16} className="text-purple-600" />
+                  </div>
+                )}
+
+                <div className={`max-w-2xl ${
+                  message.role === 'user' 
+                    ? 'bg-purple-600 text-white rounded-lg px-4 py-3' 
+                    : 'bg-gray-50 rounded-lg px-4 py-3'
+                }`}>
+                  {message.content === "..." ? (
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
                     </div>
                   ) : (
-                    <div key={msg.id}>
-                      <div className="bg-white rounded-lg border p-4 mb-2">
-                        {msg.isThinking ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                              <div
-                                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                            </div>
-                            <span className="text-gray-500 text-sm">
-                              Thinking...
-                            </span>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                              {msg.content.split("\n").map((line, index) => (
-                                <div key={index} className="mb-2 last:mb-0">
-                                  {line.trim() === "" ? <br /> : line}
-                                </div>
-                              ))}
-                            </div>
-                            {msg.sources && msg.sources > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
-                                <span className="text-xs text-gray-500">
-                                  Sources: {msg.sources} reference
-                                  {msg.sources !== 1 ? "s" : ""}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {msg.followUps && !msg.isThinking && (
-                        <div className="space-y-2">
-                          <p className="text-xs text-gray-500 font-medium">
-                            Follow up questions:
-                          </p>
-                          {msg.followUps.map((q, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleSendMessage(q)}
-                              className="block w-full text-left px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg text-sm border border-purple-200 transition-colors"
-                            >
-                              {q}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    <div className={`whitespace-pre-wrap ${message.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                      {message.content}
                     </div>
-                  )
+                  )}
+
+                  {message.servers_used && message.servers_used.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-500">
+                        Connected to: {message.servers_used.join(', ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <User size={16} className="text-gray-600" />
+                  </div>
                 )}
               </div>
-              <div className="border-t border-gray-200 p-4">
-                <ChatInput
-                  onSendMessage={handleSendMessage}
-                  isLoading={isLoading}
-                  placeholder="Ask a follow up..."
-                />
-              </div>
-            </>
-          )}
-        </main>
+            ))}
+          </div>
 
-        {/* Customer Support Insights Sidebar */}
-        <CustomerSupportInsights
-          isOpen={isInsightsOpen}
-          onClose={() => setIsInsightsOpen(false)}
-          hasMessages={hasMessages}
-          data={customerSupportData}
-          loading={isLoadingSupportData}
-        />
+          {/* Input */}
+          <div className="border-t border-gray-200 px-6 py-4 bg-white">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              placeholder={`Message ${agent.name}...`}
+            />
+          </div>
+        </main>
       </div>
     </DashboardLayout>
   );
 }
 
 // Wrapper with Suspense boundary
-export default function AIChatbotPage() {
+export default function AgentTalkPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <AIChatbotPageContent />
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-purple-200 rounded-full animate-spin border-t-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <AgentTalkPageContent />
     </Suspense>
   );
 }
