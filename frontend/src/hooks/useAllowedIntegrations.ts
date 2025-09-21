@@ -24,8 +24,8 @@ export const useAllowedIntegrations = () => {
           const data = await response.json();
           let allowedIntegrations = data.allowed_integrations || [];
           
-          // If we get all 3 integrations back and user is admin, try to fix the organization restrictions
-          if (allowedIntegrations.length === 3 && user?.role === 'admin' && 
+          // If we get all 3 integrations back, try to fix the organization restrictions
+          if (allowedIntegrations.length === 3 && 
               JSON.stringify(allowedIntegrations.sort()) === JSON.stringify(['confluence', 'jira', 'zendesk'].sort())) {
             try {
               const fixResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/organization/fix-integrations`, {
