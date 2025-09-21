@@ -44,6 +44,7 @@ from database import (
 )
 from mcp_manager import MCPConnectionManager
 from vfl_project_agent import run_vfl_project_agent
+from test_agent import product_management_agent
 
 
 # Pydantic models for requests/responses
@@ -1574,7 +1575,7 @@ async def customer_support_agent():
 async def vfl_project_agent():
     """VFL Project Agent that analyzes Jira and Confluence data for VFL project"""
     try:
-        result = await run_vfl_project_agent(manager)
+        result = product_management_agent()
         return JSONResponse(content=result)
     except HTTPException as e:
         raise e
