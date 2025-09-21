@@ -356,7 +356,7 @@ class MCPConnectionManager:
 - Each tool call should be purposeful and informed by previous results
 - If you need to call multiple tools, do so one at a time to allow for analysis between calls"""
 
-        system_prompt = f"""You are KnowvaAI, an intelligent assistant with access to multiple enterprise tools and data sources. Your goal is to provide comprehensive, accurate, and actionable responses by leveraging the available tools effectively.
+        system_prompt = f"""You are Knowva, an intelligent assistant with access to multiple enterprise tools and data sources. Your goal is to provide comprehensive, accurate, and actionable responses by leveraging the available tools effectively.
 
 **Core Principles:**
 1. **Be Proactive**: Use multiple tools when needed to gather comprehensive information
