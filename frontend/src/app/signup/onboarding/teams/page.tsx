@@ -40,7 +40,7 @@ export default function CreateTeamsPage() {
   useEffect(() => {
     const loadUserIntegrations = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/integrations`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/integrations`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -109,7 +109,7 @@ export default function CreateTeamsPage() {
         );
       } else {
         // Add new team via API
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/onboarding/teams`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/onboarding/teams`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

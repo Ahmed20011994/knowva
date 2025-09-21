@@ -347,7 +347,7 @@ function AIChatbotPageContent() {
     "Generate a roadmap",
   ];
 
-  const API_URL = "http://134.33.240.184:8000";
+  const API_URL = "http://135.222.251.229:8000";
 
   // Fetch customer support data
   useEffect(() => {

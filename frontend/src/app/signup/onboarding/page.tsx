@@ -24,7 +24,7 @@ export default function OrganizationPage() {
     setError("");
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/onboarding/organization`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/onboarding/organization`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
