@@ -61,18 +61,35 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
+       {/* Header */}
       <header className="p-4">
-        <h1 className="text-xl font-bold text-purple-600">Knowva</h1>
+        {/* Logo Image */}
+          <div className="flex items-center">
+            <img
+              src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+              alt="Knowva Logo"
+              className="w-[89px] h-[20px] aspect-[89/20]"
+            />
+            
+          </div>
       </header>
       <hr />
 
       {/* Signup Form */}
       <main className="flex flex-1 items-center justify-center">
         <div className="w-full max-w-md px-8">
-          <h2 className="text-2xl font-bold text-[#202020] text-center">
-            Welcome to Knowva
-          </h2>
+          {/* Combined Heading and Logo */}
+          <div className="flex items-center justify-center mb-4"> {/* Added flex, items-center, justify-center for horizontal alignment and vertical centering */}
+            <h2 className="text-2xl font-bold text-[#202020]">
+              Welcome to 
+            </h2>
+            {/* Logo Image */}
+            <img
+              src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+              alt="Knowva Logo"
+              className="w-[89px] h-[20px] aspect-[89/20] ml-2" // Added ml-2 for spacing
+            />
+          </div>
           <p className="mt-2 text-sm text-[#202020] text-center">
             Enter your email to login or create a new account and access all your knowledge in one place.
           </p>

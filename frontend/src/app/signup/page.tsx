@@ -74,7 +74,16 @@ export default function SignupPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="p-4">
-        <h1 className="text-xl font-bold text-purple-600">Knowva</h1>
+        {/* Header */}     
+        {/* Logo Image */}
+          <div className="flex items-center">
+            <img
+              src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+              alt="Knowva Logo"
+              className="w-[89px] h-[20px] aspect-[89/20]"
+            />
+            
+          </div>
       </header>
       <hr />
 

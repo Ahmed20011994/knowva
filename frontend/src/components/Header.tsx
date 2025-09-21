@@ -89,12 +89,14 @@ const Header: React.FC = () => {
 
   return (
     <header className="relative flex items-center justify-between p-4 border-b border-gray-200 bg-white md:px-6 lg:px-8">
-      {/* Left section: Brand Logo */}
-      <div className="flex-shrink-0">
-        <Link href="/dashboard" className="text-xl font-bold text-purple-600">
-          Knowva
-        </Link>
-      </div>
+      {/* Logo Image */}
+          <div className="flex items-center">
+            <img
+              src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+              alt="Knowva Logo"
+              className="w-[89px] h-[20px] aspect-[89/20]"
+            />
+          </div>
 
       {/* Center section: Navigation Icons */}
       <nav className="hidden md:flex flex-grow justify-center">
