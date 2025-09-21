@@ -1,5 +1,5 @@
 "use client";
-
+import { useAuth } from "@/libs/auth";
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -331,7 +331,7 @@ function AIChatbotPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
-
+  const { user, token, isLoading: isAuthLoading } = useAuth();
   const searchParams = useSearchParams();
   const [customerSupportData, setCustomerSupportData] =
     useState<CustomerSupportData | null>(null);
@@ -346,10 +346,17 @@ function AIChatbotPageContent() {
   ];
 
   const API_URL = "http://135.222.251.229:8000";
-  const USER_ID = "user-123"; // This should come from your auth context/state
+
+  const USER_ID = user?.id; // Get actual user ID from auth context
+  const USER_ROLE = user?.role; // Get actual user role from auth context
 
   // Fetch user conversations on component mount
   useEffect(() => {
+    // Don't fetch conversations if auth is still loading or user is not available
+    if (isAuthLoading || !user || !USER_ID) {
+      return;
+    }
+
     const fetchUserConversations = async () => {
       setIsLoadingConversations(true);
       try {
@@ -409,7 +416,7 @@ function AIChatbotPageContent() {
     };
 
     fetchUserConversations();
-  }, []);
+  }, [isAuthLoading, user, USER_ID]);
 
   // Fetch customer support data
   useEffect(() => {
@@ -437,7 +444,7 @@ function AIChatbotPageContent() {
   }, []);
 
   const handleSendMessage = async (msg: string) => {
-    if (!activeSession) return;
+    if (!activeSession || !USER_ID) return;
     setIsLoading(true);
 
     // Add user message immediately

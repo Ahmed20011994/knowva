@@ -591,15 +591,15 @@ async def get_organization_allowed_integrations(current_user: Dict[str, Any] = D
 async def fix_organization_integrations(current_user: Dict[str, Any] = Depends(require_authenticated_user)):
     """Fix organization integration restrictions based on existing data (for migration purposes)"""
     
-    # Only allow admins to fix organization integrations
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can fix organization integrations"
-        )
-    
     try:
+        # Get company either as admin or through team membership
         company = await CompanyService.get_company_by_admin(current_user["user_id"])
+        if not company:
+            # Try to get company through user's teams
+            teams = await TeamService.get_user_teams(current_user["user_id"])
+            if teams and teams[0].company_id:
+                company = await CompanyService.get_company_by_id(str(teams[0].company_id))
+        
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -869,13 +869,13 @@ async def get_invite_details(token: str):
             detail="Failed to get invitation details"
         )
 
-# Admin endpoints
-@router.get("/users", dependencies=[Depends(require_admin_role)])
-async def list_users(current_user: dict = Depends(get_current_user_token)):
-    """List all users with their team information (admin only)"""
+# User endpoints
+@router.get("/users")
+async def list_users(current_user: dict = Depends(require_authenticated_user)):
+    """List all users in the organization with their team information"""
     try:
         user_service = UserService()
-        users_with_teams = await user_service.get_all_users_with_teams(current_user["user_id"])
+        users_with_teams = await user_service.get_all_users_in_organization(current_user["user_id"])
         return {"users": users_with_teams}
     except Exception as e:
         print(f"Error in list_users: {e}")

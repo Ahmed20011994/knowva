@@ -20,7 +20,7 @@ class EmailService:
         self.smtp_username = os.getenv("SMTP_USERNAME", "")
         self.smtp_password = os.getenv("SMTP_PASSWORD", "")
         self.from_email = os.getenv("FROM_EMAIL", self.smtp_username)
-        self.app_url = os.getenv("APP_URL", "http://localhost:8000")
+        self.app_url = os.getenv("APP_URL", "http://4.236.228.13:3000/")
     
     async def send_invitation_email(
         self, 

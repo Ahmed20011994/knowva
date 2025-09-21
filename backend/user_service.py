@@ -159,7 +159,7 @@ class UserService:
     
     @staticmethod
     async def get_all_users_with_teams(company_admin_id: str) -> List[Dict[str, Any]]:
-        """Get all users with their team information for a company"""
+        """Get all users with their team information for a company (admin only)"""
         users_collection = await get_users_collection()
         teams_collection = await get_teams_collection()
         companies_collection = await get_companies_collection()
@@ -218,6 +218,92 @@ class UserService:
             return users_with_teams
         except Exception as e:
             print(f"Error getting users with teams: {e}")
+            return []
+
+    @staticmethod
+    async def get_all_users_in_organization(user_id: str) -> List[Dict[str, Any]]:
+        """Get all users in the same organization as the current user"""
+        users_collection = await get_users_collection()
+        teams_collection = await get_teams_collection()
+        companies_collection = await get_companies_collection()
+        
+        try:
+            # First, find the user's company through their teams or if they're an admin
+            company = None
+            
+            # Check if user is an admin
+            admin_company = await companies_collection.find_one({
+                "admin_user_id": PyObjectId(user_id)
+            })
+            
+            if admin_company:
+                company = admin_company
+            else:
+                # Find company through user's teams
+                teams_cursor = teams_collection.find({
+                    "members": PyObjectId(user_id)
+                })
+                
+                async for team_doc in teams_cursor:
+                    if team_doc.get("company_id"):
+                        company = await companies_collection.find_one({
+                            "_id": team_doc["company_id"]
+                        })
+                        break
+            
+            if not company:
+                return []
+            
+            company_id = company["_id"]
+            
+            # Get all teams for this company
+            teams_cursor = teams_collection.find({"company_id": company_id})
+            company_teams = {}
+            user_teams_map = {}
+            
+            async for team_doc in teams_cursor:
+                team_id_str = str(team_doc["_id"])
+                team_name = team_doc["name"]
+                company_teams[team_id_str] = team_name
+                
+                # Map users to teams
+                for member_id in team_doc.get("members", []):
+                    member_id_str = str(member_id)
+                    if member_id_str not in user_teams_map:
+                        user_teams_map[member_id_str] = []
+                    user_teams_map[member_id_str].append(team_name)
+            
+            # Get all users in the organization (including admin)
+            admin_user_id = str(company.get("admin_user_id", ""))
+            all_user_ids = list(user_teams_map.keys())
+            if admin_user_id and admin_user_id not in all_user_ids:
+                all_user_ids.append(admin_user_id)
+            
+            if not all_user_ids:
+                return []
+                
+            users_cursor = users_collection.find({
+                "_id": {"$in": [PyObjectId(uid) for uid in all_user_ids]}
+            })
+            
+            users_with_teams = []
+            async for user_doc in users_cursor:
+                user_id_str = str(user_doc["_id"])
+                user_teams = user_teams_map.get(user_id_str, [])
+                
+                # Determine role display name
+                role_display = user_doc.get("admin_role", "Admin") if user_doc.get("role") == "admin" else "Member"
+                
+                users_with_teams.append({
+                    "id": user_id_str,
+                    "email": user_doc["email"],
+                    "role": role_display,
+                    "teams": user_teams
+                })
+            
+            return users_with_teams
+        except Exception as e:
+            print(f"Error getting users in organization: {e}")
             return []
 
 class CompanyService:
