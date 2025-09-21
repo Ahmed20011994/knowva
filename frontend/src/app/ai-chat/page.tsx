@@ -640,6 +640,10 @@ function AIChatbotPageContent() {
   );
   const [isLoadingVflData, setIsLoadingVflData] = useState(false);
 
+  // Cache flags to prevent refetching
+  const [supportDataCached, setSupportDataCached] = useState(false);
+  const [vflDataCached, setVflDataCached] = useState(false);
+
   // User role toggle - can be "support" or "product_manager"
   const [userRole, setUserRole] = useState<"support" | "product_manager">(
     "support"
@@ -653,7 +657,7 @@ function AIChatbotPageContent() {
     "Generate a roadmap",
   ];
 
-  const API_URL = "http://localhost:8000";
+  const API_URL = "http://135.222.251.229:8000";
 
   const USER_ID = user?.id; // Get actual user ID from auth context
   const USER_ROLE = user?.role; // Get actual user role from auth context
@@ -735,8 +739,10 @@ function AIChatbotPageContent() {
     fetchUserConversations();
   }, [isAuthLoading, user, USER_ID]);
 
-  // Fetch both datasets once on page load (in parallel)
+  // Fetch support data on page load (with caching)
   useEffect(() => {
+    if (supportDataCached) return; // Skip if already cached
+
     const fetchSupportData = async () => {
       setIsLoadingSupportData(true);
       try {
@@ -744,6 +750,7 @@ function AIChatbotPageContent() {
         if (response.ok) {
           const data = await response.json();
           setCustomerSupportData(data);
+          setSupportDataCached(true); // Mark as cached
         } else {
           console.error(
             "Failed to fetch customer support data:",
@@ -757,30 +764,36 @@ function AIChatbotPageContent() {
       }
     };
 
-    const fetchVflData = async () => {
-      setIsLoadingVflData(true);
-      try {
-        const response = await fetch(`${API_URL}/vfl-project-agent`);
-        if (response.ok) {
-          const data = await response.json();
-          setVflProjectData(data);
-        } else {
-          console.error(
-            "Failed to fetch VFL project data:",
-            response.statusText
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching VFL project data:", error);
-      } finally {
-        setIsLoadingVflData(false);
-      }
-    };
-
-    // Run both API calls in parallel
     fetchSupportData();
-    fetchVflData();
-  }, []); // Only run once on mount
+  }, [supportDataCached]); // Only run once on mount or when cache is reset
+
+  // Fetch VFL data only when product manager role is selected (with caching)
+  useEffect(() => {
+    if (userRole === "product_manager" && !vflDataCached) {
+      const fetchVflData = async () => {
+        setIsLoadingVflData(true);
+        try {
+          const response = await fetch(`${API_URL}/vfl-project-agent`);
+          if (response.ok) {
+            const data = await response.json();
+            setVflProjectData(data);
+            setVflDataCached(true); // Mark as cached
+          } else {
+            console.error(
+              "Failed to fetch VFL project data:",
+              response.statusText
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching VFL project data:", error);
+        } finally {
+          setIsLoadingVflData(false);
+        }
+      };
+
+      fetchVflData();
+    }
+  }, [userRole, vflDataCached]); // Re-run when userRole changes or cache is reset
 
   const handleSendMessage = async (msg: string) => {
     if (!activeSession || !USER_ID) return;
