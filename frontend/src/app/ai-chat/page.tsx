@@ -113,29 +113,49 @@ const ChatInput: React.FC<{
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="relative w-full max-w-3xl mx-auto">
-      <div className="relative rounded-lg border border-gray-300 bg-white">
+    <form onSubmit={handleSubmit} className="relative w-full max-w-4xl mx-auto">
+      <div className="relative rounded-xl border-2 border-gray-200 bg-white shadow-lg hover:border-purple-300 focus-within:border-purple-400 transition-all duration-200">
         <textarea
           placeholder={placeholder}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full px-4 py-3 pr-32 text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none resize-none"
+          onKeyDown={handleKeyDown}
+          className="w-full px-6 py-4 pr-16 text-gray-800 placeholder-gray-500 bg-transparent focus:outline-none resize-none text-base leading-relaxed"
           rows={1}
+          style={{
+            minHeight: "56px",
+            maxHeight: "200px",
+            overflowY: prompt.split("\n").length > 3 ? "auto" : "hidden",
+          }}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           <button
             type="submit"
             disabled={isLoading || !prompt.trim()}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-3 rounded-lg transition-all duration-200 transform ${
               prompt.trim() && !isLoading
-                ? "bg-purple-600 text-white hover:bg-purple-700"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 hover:scale-105 shadow-md"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            <ArrowRight size={18} />
+            {isLoading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <ArrowRight size={20} />
+            )}
           </button>
         </div>
+      </div>
+      <div className="flex items-center justify-center mt-2 text-xs text-gray-400">
+        <span>Press Enter to send, Shift+Enter for new line</span>
       </div>
     </form>
   );
@@ -148,32 +168,48 @@ const ChatSidebar: React.FC<{
   onSessionSelect: (id: number) => void;
   onNewChat: () => void;
 }> = ({ sessions, activeSessionId, onSessionSelect, onNewChat }) => (
-  <aside className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-    <div className="flex-1 overflow-y-auto p-3">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-        Chats
-      </h3>
-      <div className="space-y-1">
-        {sessions.map((session) => (
-          <button
-            key={session.id}
-            onClick={() => onSessionSelect(session.id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-              activeSessionId === session.id
-                ? "bg-purple-100 text-purple-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            {session.title}
-          </button>
-        ))}
-      </div>
+  <aside className="w-72 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col h-full shadow-sm">
+    <div className="p-4 border-b border-gray-100">
       <button
         onClick={onNewChat}
-        className="w-full mt-3 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg text-sm font-medium flex items-center gap-2"
+        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md transform hover:scale-105"
       >
-        <Plus size={16} /> New Chat
+        <Plus size={18} /> New Chat
       </button>
+    </div>
+    <div className="flex-1 overflow-y-auto p-4">
+      <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+        <span>💬</span>
+        <span>Recent Conversations</span>
+      </h3>
+      <div className="space-y-2">
+        {sessions.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <p className="text-sm">No conversations yet</p>
+            <p className="text-xs mt-1">Start a new chat to begin</p>
+          </div>
+        ) : (
+          sessions.map((session) => (
+            <button
+              key={session.id}
+              onClick={() => onSessionSelect(session.id)}
+              className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-200 ${
+                activeSessionId === session.id
+                  ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-medium border border-purple-200 shadow-sm"
+                  : "hover:bg-gray-100 text-gray-700 hover:shadow-sm"
+              }`}
+            >
+              <div className="truncate">{session.title}</div>
+              {session.messages.length > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {session.messages.length} message
+                  {session.messages.length !== 1 ? "s" : ""}
+                </div>
+              )}
+            </button>
+          ))
+        )}
+      </div>
     </div>
   </aside>
 );
@@ -959,115 +995,151 @@ function AIChatbotPageContent() {
         {/* Chat Area */}
         <main className="flex-1 flex flex-col">
           {!hasMessages ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
+            <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 bg-gradient-to-br from-purple-50 via-white to-blue-50">
               {/* Combined Heading and Logo */}
-              <div className="flex items-center justify-center mb-4">
-                {" "}
-                {/* Added flex, items-center, justify-center for horizontal alignment and vertical centering */}
-                <h2 className="text-4xl font-bold text-[#202020]">Meet</h2>
+              <div className="flex items-center justify-center mb-6 animate-in fade-in slide-in-from-bottom duration-700">
+                <h2 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  Meet
+                </h2>
                 {/* Logo Image */}
                 <img
                   src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
                   alt="Knowva Logo"
-                  className="w-[120px] aspect-[89/20] ml-2" // Added ml-2 for spacing
+                  className="w-[140px] aspect-[89/20] ml-3"
                 />
               </div>
-              <p className="text-[#202020] text-center max-w-2xl mb-8">
+              <p className="text-gray-700 text-center max-w-3xl mb-10 text-lg leading-relaxed animate-in fade-in slide-in-from-bottom duration-700 delay-200">
                 Say hello to your connected brain. Search, explore, and
                 understand everything across your tools — all from one place.
               </p>
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-              />
-              <div className="w-full max-w-3xl mt-8">
-                <p className="text-sm text-gray-500 mb-4">
-                  Suggestions to get started
+              <div className="w-full animate-in fade-in slide-in-from-bottom duration-700 delay-300">
+                <ChatInput
+                  onSendMessage={handleSendMessage}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="w-full max-w-4xl mt-10 animate-in fade-in slide-in-from-bottom duration-700 delay-500">
+                <p className="text-sm text-gray-600 mb-6 font-medium flex items-center justify-center space-x-2">
+                  <span>✨</span>
+                  <span>Suggestions to get started</span>
                 </p>
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSendMessage(s)}
-                    className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-purple-600 mb-2"
-                  >
-                    {s}
-                  </button>
-                ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSendMessage(s)}
+                      className="group relative text-left px-6 py-4 rounded-xl border-2 border-gray-200 hover:border-purple-300 bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-300 text-gray-700 hover:text-purple-700 shadow-sm hover:shadow-md transform hover:-translate-y-1"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                        <span className="font-medium">{s}</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
             <>
-              <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+              <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
                 {activeSession?.messages.map((msg) =>
                   msg.type === "user" ? (
-                    <div key={msg.id} className="flex justify-end">
-                      <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-2xl">
-                        <p className="text-gray-800 whitespace-pre-wrap">
+                    <div
+                      key={msg.id}
+                      className="flex justify-end animate-in slide-in-from-right duration-300"
+                    >
+                      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl rounded-br-md px-6 py-4 max-w-2xl shadow-lg">
+                        <p className="whitespace-pre-wrap leading-relaxed">
                           {msg.content}
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div key={msg.id}>
-                      <div className="bg-white rounded-lg border p-4 mb-2">
-                        {msg.isThinking ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                              <div
-                                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                            </div>
-                            <span className="text-gray-500 text-sm">
-                              Thinking...
-                            </span>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                              {msg.content.split("\n").map((line, index) => (
-                                <div key={index} className="mb-2 last:mb-0">
-                                  {line.trim() === "" ? <br /> : line}
+                    <div
+                      key={msg.id}
+                      className="animate-in slide-in-from-left duration-300"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-semibold">
+                            AI
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="bg-white rounded-2xl rounded-tl-md border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            {msg.isThinking ? (
+                              <div className="flex items-center space-x-3">
+                                <div className="flex space-x-1">
+                                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
+                                  <div
+                                    className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
+                                    style={{ animationDelay: "0.1s" }}
+                                  ></div>
+                                  <div
+                                    className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
+                                    style={{ animationDelay: "0.2s" }}
+                                  ></div>
                                 </div>
-                              ))}
-                            </div>
-                            {msg.sources && msg.sources > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
-                                <span className="text-xs text-gray-500">
-                                  Sources: {msg.sources} reference
-                                  {msg.sources !== 1 ? "s" : ""}
+                                <span className="text-gray-600 text-sm font-medium">
+                                  AI is thinking...
                                 </span>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed text-base">
+                                  {msg.content
+                                    .split("\n")
+                                    .map((line, index) => (
+                                      <div
+                                        key={index}
+                                        className="mb-2 last:mb-0"
+                                      >
+                                        {line.trim() === "" ? <br /> : line}
+                                      </div>
+                                    ))}
+                                </div>
+                                {msg.sources && msg.sources > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <span className="text-xs text-gray-600 font-medium">
+                                        {msg.sources} source
+                                        {msg.sources !== 1 ? "s" : ""}{" "}
+                                        referenced
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                      {msg.followUps && !msg.isThinking && (
-                        <div className="space-y-2">
-                          <p className="text-xs text-gray-500 font-medium">
-                            Follow up questions:
-                          </p>
-                          {msg.followUps.map((q, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleSendMessage(q)}
-                              className="block w-full text-left px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg text-sm border border-purple-200 transition-colors"
-                            >
-                              {q}
-                            </button>
-                          ))}
+                          {msg.followUps && !msg.isThinking && (
+                            <div className="space-y-2 mt-4">
+                              <p className="text-sm text-gray-600 font-medium flex items-center space-x-2">
+                                {/* <span>💡</span>
+                                <span>Follow-up questions:</span> */}
+                              </p>
+                              <div className="grid gap-2">
+                                {msg.followUps.map((q, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => handleSendMessage(q)}
+                                    className="text-left px-4 py-3 text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm border border-purple-200 hover:border-purple-300 transition-all duration-200 hover:shadow-sm"
+                                  >
+                                    {q}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   )
                 )}
               </div>
-              <div className="border-t border-gray-200 p-4">
+              <div className="border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white p-6">
                 <ChatInput
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
