@@ -326,13 +326,11 @@ const CustomerSupportInsights: React.FC<{
 
 // Main Page Component
 function AIChatbotPageContent() {
-  const [sessions, setSessions] = useState<ChatSession[]>([
-    { id: 1, title: "What are the recent support tickets?", messages: [] },
-    { id: 2, title: "Update on Project X", messages: [] },
-  ]);
-  const [activeSessionId, setActiveSessionId] = useState(1);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
   const searchParams = useSearchParams();
   const [customerSupportData, setCustomerSupportData] =
@@ -348,6 +346,70 @@ function AIChatbotPageContent() {
   ];
 
   const API_URL = "http://135.222.251.229:8000";
+  const USER_ID = "user-123"; // This should come from your auth context/state
+
+  // Fetch user conversations on component mount
+  useEffect(() => {
+    const fetchUserConversations = async () => {
+      setIsLoadingConversations(true);
+      try {
+        const response = await fetch(`${API_URL}/users/${USER_ID}/conversations`);
+        if (response.ok) {
+          const conversations = await response.json();
+
+          // Transform database conversations to ChatSession format
+          const transformedSessions: ChatSession[] = conversations.map((conv: any, index: number) => {
+            // Generate a title from the first user message or use a default
+            let title = `Chat ${index + 1}`;
+            if (conv.messages && conv.messages.length > 0) {
+              const firstUserMessage = conv.messages.find((msg: any) => msg.role === 'user');
+              if (firstUserMessage) {
+                title = firstUserMessage.content.length > 50
+                  ? firstUserMessage.content.substring(0, 50) + "..."
+                  : firstUserMessage.content;
+              }
+            }
+
+            // Transform messages to ChatMessage format
+            const transformedMessages: ChatMessage[] = conv.messages.map((msg: any, msgIndex: number) => ({
+              id: msgIndex,
+              type: msg.role === 'user' ? 'user' : 'ai',
+              content: msg.content,
+              sources: msg.sources,
+              followUps: msg.followUps,
+              isThinking: false
+            }));
+
+            return {
+              id: parseInt(conv.id) || index,
+              title: title,
+              messages: transformedMessages,
+              conversationId: conv.id
+            };
+          });
+
+          setSessions(transformedSessions);
+
+          // Set the first session as active if we have sessions
+          if (transformedSessions.length > 0) {
+            setActiveSessionId(transformedSessions[0].id);
+          }
+        } else {
+          console.error("Failed to fetch conversations:", response.statusText);
+          // If no conversations exist, start with an empty session
+          setSessions([]);
+        }
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+        // If there's an error, start with an empty session
+        setSessions([]);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    };
+
+    fetchUserConversations();
+  }, []);
 
   // Fetch customer support data
   useEffect(() => {
@@ -407,7 +469,7 @@ function AIChatbotPageContent() {
         query: string;
         conversation_id?: string;
         user_id: string;
-      } = { query: msg, user_id: "user-123" };
+      } = { query: msg, user_id: USER_ID };
 
       // If session has conversationId, include it (for subsequent messages)
       if (activeSession.conversationId) {
@@ -483,6 +545,18 @@ function AIChatbotPageContent() {
     }
   };
 
+  // Handle creating a new chat
+  const handleNewChat = () => {
+    const newSession: ChatSession = {
+      id: Date.now(),
+      title: "New Chat",
+      messages: []
+    };
+
+    setSessions([newSession, ...sessions]);
+    setActiveSessionId(newSession.id);
+  };
+
   // Handle pre-filled query from dashboard
   useEffect(() => {
     const query = searchParams.get("q");
@@ -498,17 +572,27 @@ function AIChatbotPageContent() {
     <DashboardLayout>
       <div className="flex h-[calc(100vh-64px)] bg-white">
         {/* Sidebar */}
-        <ChatSidebar
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          onSessionSelect={setActiveSessionId}
-          onNewChat={() =>
-            setSessions([
-              { id: Date.now(), title: "New Chat", messages: [] },
-              ...sessions,
-            ])
-          }
-        />
+        {isLoadingConversations ? (
+          <aside className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Chats
+              </h3>
+              <div className="space-y-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-full px-3 py-2 rounded-lg bg-gray-200 animate-pulse h-8"></div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        ) : (
+          <ChatSidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId || 0}
+            onSessionSelect={setActiveSessionId}
+            onNewChat={handleNewChat}
+          />
+        )}
 
         {/* Chat Area */}
         <main className="flex-1 flex flex-col">
