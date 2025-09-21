@@ -51,7 +51,7 @@ class TeamCreateRequest(BaseModel):
 
 class IntegrationCreateRequest(BaseModel):
     integration_type: str  # jira, confluence, zendesk
-    secret_key: str
+    secret_key: Optional[str] = ""
 
 class InviteRequest(BaseModel):
     email: EmailStr
@@ -247,60 +247,12 @@ async def create_team(
 ):
     """Create a new team during onboarding"""
     
-    # Only allow admins to create teams
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create teams"
-        )
-    
-    # Validate integrations
-    valid_integrations = ["jira", "confluence", "zendesk"]
-    for integration in request.integrations:
-        if integration.lower() not in valid_integrations:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid integration: {integration}. Valid options: {', '.join(valid_integrations)}"
-            )
-    
     try:
-        # Get the company for this admin
-        company = await CompanyService.get_company_by_admin(current_user["user_id"])
-        if not company:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Company not found. Please complete organization setup first."
-            )
-        
-        # Handle organization-level integration restrictions
-        team_integrations = [i.lower() for i in request.integrations]
-        
-        if company.allowed_integrations:
-            # If organization already has restrictions, validate team integrations against them
-            invalid_integrations = [integration for integration in team_integrations if integration not in company.allowed_integrations]
-            if invalid_integrations:
-                allowed_list = ", ".join(company.allowed_integrations)
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Team integrations must match organization restrictions. Allowed: {allowed_list}"
-                )
-        elif team_integrations:
-            # Set organization-level integration restrictions based on team's first integrations
-            if "jira" in team_integrations:
-                # If Jira is selected, only Jira is allowed for the organization
-                allowed_integrations = ["jira"]
-            else:
-                # For other integrations, allow all except Jira
-                allowed_integrations = ["confluence", "zendesk"]
-            
-            # Update company with allowed integrations
-            await CompanyService.update_company_integrations(str(company.id), allowed_integrations)
-        
         team = await TeamService.create_team(
             name=request.name,
-            integrations=team_integrations,
+            integrations=[i.lower() for i in request.integrations],
             created_by=current_user["user_id"],
-            company_id=str(company.id)
+            company_id=None  # Make company_id optional
         )
         
         return {
@@ -537,57 +489,11 @@ async def create_integration(
 ):
     """Create a new integration"""
     
-    # Only allow admins to create integrations
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create integrations"
-        )
-    
-    # Validate integration type
-    valid_types = ["jira", "confluence", "zendesk"]
-    if request.integration_type.lower() not in valid_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid integration type. Must be one of: {', '.join(valid_types)}"
-        )
-    
     try:
-        # Get the company for this admin to check organization-level restrictions
-        company = await CompanyService.get_company_by_admin(current_user["user_id"])
-        if not company:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company not found. Please complete organization setup first."
-            )
-        
-        integration_type_lower = request.integration_type.lower()
-        
-        # Check organization-level integration restrictions
-        if company.allowed_integrations:
-            # If organization already has allowed integrations, only allow those types
-            if integration_type_lower not in company.allowed_integrations:
-                allowed_list = ", ".join(company.allowed_integrations)
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Organization is restricted to these integrations: {allowed_list}"
-                )
-        else:
-            # First integration for the organization - set the allowed integrations
-            if integration_type_lower == "jira":
-                # If Jira is selected first, only Jira is allowed
-                allowed_integrations = ["jira"]
-            else:
-                # For other integrations, allow all except Jira
-                allowed_integrations = ["confluence", "zendesk"]
-            
-            # Update company with allowed integrations
-            await CompanyService.update_company_integrations(str(company.id), allowed_integrations)
-        
         integration = await IntegrationService.create_integration(
             user_id=current_user["user_id"],
-            integration_type=integration_type_lower,
-            secret_key=request.secret_key
+            integration_type=request.integration_type,
+            secret_key=request.secret_key or ""
         )
         
         return {
@@ -597,8 +503,6 @@ async def create_integration(
             "created_at": integration.created_at
         }
         
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -749,12 +653,6 @@ async def send_invite(
 ):
     """Send team invitation during onboarding"""
     
-    # Only allow admins to send invites
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can send invitations"
-        )
     
     try:
         # Get the company for this admin

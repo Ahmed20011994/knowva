@@ -424,14 +424,14 @@ class IntegrationService:
     """Service class for integration-related database operations"""
     
     @staticmethod
-    async def create_integration(user_id: str, integration_type: str, secret_key: str) -> Integration:
+    async def create_integration(user_id: str, integration_type: str, secret_key: str = "") -> Integration:
         """Create a new integration"""
         integrations_collection = await get_integrations_collection()
         
         integration_doc = Integration(
             user_id=PyObjectId(user_id),
             integration_type=integration_type,
-            secret_key=secret_key,
+            secret_key=secret_key or "",
             is_active=True,
             created_at=datetime.utcnow()
         )

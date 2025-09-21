@@ -145,7 +145,7 @@ class Integration(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId
     integration_type: str  # jira, confluence, zendesk
-    secret_key: str
+    secret_key: Optional[str] = ""
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
     

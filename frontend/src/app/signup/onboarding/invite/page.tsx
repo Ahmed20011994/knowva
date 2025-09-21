@@ -23,7 +23,7 @@ export default function InviteTeammatesPage() {
   const router = useRouter();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Marketing");
+  const [role, setRole] = useState("CEO");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function InviteTeammatesPage() {
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/teams`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/teams`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -44,6 +44,7 @@ export default function InviteTeammatesPage() {
         
         if (response.ok) {
           const userTeams = await response.json();
+          console.log("Loaded teams:", userTeams);
           setTeams(userTeams);
           
           // Set first team as default
@@ -51,6 +52,9 @@ export default function InviteTeammatesPage() {
             setSelectedTeam(userTeams[0].id);
           }
         } else {
+          console.log("Failed to load teams, response status:", response.status);
+          const errorText = await response.text();
+          console.log("Error response:", errorText);
           // Fallback to dummy data if API fails
           const dummyTeams: Team[] = [
             { id: "1", name: "Connect", integrations: ["jira", "confluence"] },
@@ -118,7 +122,7 @@ export default function InviteTeammatesPage() {
 
       setInvites((prev) => [...prev, newInvite]);
       setEmail("");
-      setRole("Marketing");
+      setRole("CEO");
       // Keep the selected team as is for next invite
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send invitation");
@@ -233,11 +237,10 @@ export default function InviteTeammatesPage() {
                     paddingRight: "2.5rem",
                   }}
                 >
-                  <option value="Marketing">Marketing</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Developer">Developer</option>
-                  <option value="Designer">Designer</option>
-                  <option value="Viewer">Viewer</option>
+                  <option value="CEO">CEO</option>
+                  <option value="Product Manager">Product Manager</option>
+                  <option value="Product Marketing Manager">Product Marketing Manager</option>
+                  <option value="Customer Support">Customer Support</option>
                 </select>
               </div>
 

@@ -21,7 +21,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT Bearer token scheme
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt"""
@@ -67,15 +67,18 @@ def get_password_requirements() -> str:
     """Get password requirements string"""
     return "Password must be at least 8 characters long and contain uppercase, lowercase, and numeric characters"
 
-async def get_current_user_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+async def get_current_user_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
     """Extract and validate JWT token from Authorization header"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Not authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
     try:
+        if not credentials:
+            raise credentials_exception
+            
         token = credentials.credentials
         payload = decode_access_token(token)
         
@@ -93,6 +96,8 @@ async def get_current_user_token(credentials: HTTPAuthorizationCredentials = Dep
         }
         
     except JWTError:
+        raise credentials_exception
+    except Exception:
         raise credentials_exception
 
 # Role-based access control

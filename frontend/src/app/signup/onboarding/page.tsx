@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Building, User } from "lucide-react";
+import { Building } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/libs/auth";
 
@@ -111,24 +111,28 @@ export default function OrganizationPage() {
               >
                 What is your role?
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  placeholder="e.g. CEO"
-                  className={`w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                    role ? "text-[#202020]" : "text-gray-400"
-                  }`}
-                />
-                <User
-                  className={`absolute right-3 top-2.5 ${
-                    role ? "text-purple-600" : "text-gray-400"
-                  }`}
-                  size={20}
-                />
-              </div>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none text-[#202020] appearance-none bg-white"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                  backgroundPosition: "right 0.5rem center",
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: "1.5em 1.5em",
+                  paddingRight: "2.5rem",
+                }}
+              >
+                <option value="" disabled>
+                  Select role
+                </option>
+                <option value="CEO">CEO</option>
+                <option value="Product Manager">Product Manager</option>
+                <option value="Product Marketing Manager">Product Marketing Manager</option>
+                <option value="Customer Support">Customer Support</option>
+              </select>
             </div>
 
             {/* Continue Button */}

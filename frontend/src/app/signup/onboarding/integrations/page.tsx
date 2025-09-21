@@ -47,7 +47,7 @@ export default function IntegrationsPage() {
   const [error, setError] = useState("");
 
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user, isAuthenticated } = useAuth();
 
   const handleOpenModal = (integration: Integration) => {
     setSelectedIntegration(integration);
@@ -56,7 +56,12 @@ export default function IntegrationsPage() {
   };
 
   const handleConnect = async () => {
-    if (!selectedIntegration || !secretKey.trim()) return;
+    if (!selectedIntegration) return;
+    
+    if (!token || !isAuthenticated) {
+      setError("Authentication token not found. Please log in again.");
+      return;
+    }
     
     setIsLoading(true);
     setError("");
@@ -70,7 +75,7 @@ export default function IntegrationsPage() {
         },
         body: JSON.stringify({
           integration_type: selectedIntegration.id,
-          secret_key: secretKey.trim()
+          secret_key: secretKey
         })
       });
       
@@ -192,8 +197,8 @@ export default function IntegrationsPage() {
               </button>
             </div>
 
-            {/* Error Message */}
-            {error && (
+            {/* Error Message (suppress non-actionable admin notice) */}
+            {error && error !== "Only admins can create integrations" && (
               <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
               </div>
@@ -225,9 +230,9 @@ export default function IntegrationsPage() {
               </button>
               <button
                 onClick={handleConnect}
-                disabled={!secretKey.trim() || isLoading}
+                disabled={isLoading}
                 className={`px-4 py-2 rounded-lg text-white ${
-                  secretKey.trim() && !isLoading
+                  !isLoading
                     ? "bg-[#823BE3] hover:bg-purple-700"
                     : "bg-gray-300 cursor-not-allowed"
                 }`}
