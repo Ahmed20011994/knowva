@@ -36,7 +36,7 @@ export default function InviteTeammatesPage() {
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/teams`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/teams`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
