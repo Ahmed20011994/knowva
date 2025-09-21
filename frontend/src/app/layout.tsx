@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, DM_Sans } from "next/font/google";
 import { AuthProvider } from "@/libs/auth";
-import { Providers } from "@/context/Providers";
 
 import "./globals.css";
 
@@ -29,9 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${dmSans.variable}`}>
         <AuthProvider>
-          <Providers>
             {children}
-          </Providers>
         </AuthProvider>
       </body>
     </html>

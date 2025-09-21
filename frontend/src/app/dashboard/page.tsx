@@ -8,9 +8,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/libs/auth';
 import { apiService, Team, TeamCreateRequest } from '@/libs/api';
 import { useAllowedIntegrations } from '@/hooks/useAllowedIntegrations';
-import { useChatContext } from '@/context/ChatContext';
-
-import { ChatMessage, ChatSession } from '@/types/chat';
 
 type Integration = {
   id: string;
@@ -22,65 +19,7 @@ export default function Dashboard() {
   // Chat state
   const [prompt, setPrompt] = useState("");
   const [isMessageLoading, setIsMessageLoading] = useState(false);
-  const { addSession } = useChatContext();
   
-  // Handle sending message from dashboard
-  const handleSendMessage = async () => {
-    if (!prompt.trim() || isMessageLoading || !USER_ID) return;
-    setIsMessageLoading(true);
-
-    try {
-      // Create a new chat session
-      const newSession: ChatSession = {
-        id: Date.now(),
-        title: prompt.substring(0, 50) + (prompt.length > 50 ? "..." : ""),
-        messages: []
-      };
-
-      // Make the API call to start conversation
-      const response = await fetch(`${API_URL}/conversations/query`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: prompt,
-          user_id: USER_ID
-        })
-      });
-
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-
-      // Update the session with conversation ID and messages
-      newSession.conversationId = data.conversation_id;
-      newSession.messages = [
-        {
-          id: Date.now(),
-          type: "user",
-          content: prompt
-        },
-        {
-          id: Date.now() + 1,
-          type: "ai",
-          content: data.response || "No response from AI.",
-          followUps: data.followUps || [],
-        }
-      ];
-
-      // Add the session to global state
-      addSession(newSession);
-
-      // Clear the prompt and redirect to AI chat
-      setPrompt("");
-      router.push('/ai-chat');
-
-    } catch (error) {
-      console.error("Error starting conversation:", error);
-      // You might want to show an error message to the user here
-    } finally {
-      setIsMessageLoading(false);
-    }
-  };
-
   // Team management state
   const [teams, setTeams] = useState<Team[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -296,7 +235,6 @@ export default function Dashboard() {
         <section className="relative max-w-3xl mx-auto">
           <form onSubmit={(e) => {
             e.preventDefault();
-            handleSendMessage();
           }} className="relative p-4 rounded-xl border border-purple-300 bg-white shadow-md focus-within:ring-2 focus-within:ring-purple-500 transition-all duration-200">
             <textarea
               value={prompt}
