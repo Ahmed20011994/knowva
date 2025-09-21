@@ -68,9 +68,9 @@ pip install fastapi uvicorn pydantic anthropic mcp python-dotenv python-multipar
    ```
 
 3. **Access the API**:
-   - Server: http://localhost:8000
-   - Documentation: http://localhost:8000/docs
-   - Health check: http://localhost:8000/health
+   - Server: http://135.222.251.229:8000
+   - Documentation: http://135.222.251.229:8000/docs
+   - Health check: http://135.222.251.229:8000/health
 
 ## Environment Variables
 
@@ -149,7 +149,7 @@ BRAVE_API_KEY=your_brave_search_api_key
 ### Connect to a Server
 
 ```bash
-curl -X POST "http://localhost:8000/servers/connect" \
+curl -X POST "http://135.222.251.229:8000/servers/connect" \
   -H "Content-Type: application/json" \
   -d '{"server_name": "atlassian"}'
 ```
@@ -157,7 +157,7 @@ curl -X POST "http://localhost:8000/servers/connect" \
 ### Process a Query
 
 ```bash
-curl -X POST "http://localhost:8000/query" \
+curl -X POST "http://135.222.251.229:8000/query" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Find all recent issues in project ABC",
@@ -168,7 +168,7 @@ curl -X POST "http://localhost:8000/query" \
 ### Execute a Tool Directly
 
 ```bash
-curl -X POST "http://localhost:8000/tools/execute" \
+curl -X POST "http://135.222.251.229:8000/tools/execute" \
   -H "Content-Type: application/json" \
   -d '{
     "server_name": "atlassian",
@@ -183,7 +183,7 @@ curl -X POST "http://localhost:8000/tools/execute" \
 ### Get Available Tools
 
 ```bash
-curl "http://localhost:8000/tools"
+curl "http://135.222.251.229:8000/tools"
 ```
 
 ### Enhanced Usage Examples
@@ -191,7 +191,7 @@ curl "http://localhost:8000/tools"
 ### Batch Connect to Multiple Servers
 
 ```bash
-curl -X POST "http://localhost:8000/batch/servers/connect" \
+curl -X POST "http://135.222.251.229:8000/batch/servers/connect" \
   -H "Content-Type: application/json" \
   -d '{
     "server_names": ["atlassian", "filesystem"],
@@ -202,7 +202,7 @@ curl -X POST "http://localhost:8000/batch/servers/connect" \
 ### Execute Multiple Tools in Batch
 
 ```bash
-curl -X POST "http://localhost:8000/batch/tools/execute" \
+curl -X POST "http://135.222.251.229:8000/batch/tools/execute" \
   -H "Content-Type: application/json" \
   -d '{
     "executions": [
@@ -224,7 +224,7 @@ curl -X POST "http://localhost:8000/batch/tools/execute" \
 ### Query with Conversation History
 
 ```bash
-curl -X POST "http://localhost:8000/conversations/query" \
+curl -X POST "http://135.222.251.229:8000/conversations/query" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "What are the latest updates?",
@@ -237,13 +237,13 @@ curl -X POST "http://localhost:8000/conversations/query" \
 ### Get System Metrics
 
 ```bash
-curl "http://localhost:8000/metrics/system"
+curl "http://135.222.251.229:8000/metrics/system"
 ```
 
 ### Add New Server Configuration
 
 ```bash
-curl -X POST "http://localhost:8000/config/servers/add" \
+curl -X POST "http://135.222.251.229:8000/config/servers/add" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "custom_server",
@@ -261,14 +261,14 @@ curl -X POST "http://localhost:8000/config/servers/add" \
 ### Upload File
 
 ```bash
-curl -X POST "http://localhost:8000/files/upload" \
+curl -X POST "http://135.222.251.229:8000/files/upload" \
   -F "file=@document.pdf"
 ```
 
 ### WebSocket Connection (JavaScript)
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
+const ws = new WebSocket('ws://135.222.251.229:8000/ws');
 
 ws.onopen = function() {
     // Send a query via WebSocket
@@ -288,13 +288,13 @@ ws.onmessage = function(event) {
 ### Get Detailed Status
 
 ```bash
-curl "http://localhost:8000/status/detailed"
+curl "http://135.222.251.229:8000/status/detailed"
 ```
 
 ### Reset System State
 
 ```bash
-curl -X POST "http://localhost:8000/admin/reset"
+curl -X POST "http://135.222.251.229:8000/admin/reset"
 ```
 
 ## Supported MCP Servers

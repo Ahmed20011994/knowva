@@ -88,7 +88,7 @@ cd backend
 python start_server.py
 ```
 
-4. Visit http://localhost:8000/docs to see the API documentation
+4. Visit http://135.222.251.229:8000/docs to see the API documentation
 5. You should see the new authentication endpoints under the "Authentication" section
 
 ## Database Collections

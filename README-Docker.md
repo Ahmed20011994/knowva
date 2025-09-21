@@ -14,9 +14,9 @@
    ```
 
 3. **Access the application**:
-   - API Server: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
-   - Health Check: http://localhost:8000/health
+   - API Server: http://135.222.251.229:8000
+   - API Documentation: http://135.222.251.229:8000/docs
+   - Health Check: http://135.222.251.229:8000/health
 
 ## Commands
 

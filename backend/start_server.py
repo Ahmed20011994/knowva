@@ -72,8 +72,8 @@ def check_docker():
 def start_server():
     """Start the FastAPI server"""
     print("\n🚀 Starting MCP FastAPI Server...")
-    print("Server will be available at: http://localhost:8000")
-    print("API documentation at: http://localhost:8000/docs")
+    print("Server will be available at: http://135.222.251.229:8000")
+    print("API documentation at: http://135.222.251.229:8000/docs")
     print("Press Ctrl+C to stop the server\n")
 
     try:
