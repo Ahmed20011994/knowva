@@ -1,93 +1,47 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, MessageCircle, X, Copy, ChevronDown, Trash2 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/libs/auth";
+
 interface Agent {
-  id: number;
+  id: string;
   name: string;
   description: string;
   identifier: string;
   icon: string;
   integration: string;
   llm: string;
-  customKnowledge: string;
+  custom_knowledge: string;
   exposure: boolean;
   greeting: string;
   prompt: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Conversation {
-  id: number;
+  id: string;
   agent: string;
   dateTime: string;
   user: string;
+  status?: string;
+  message_count?: number;
 }
 
 export default function AgentPage() {
-  const [agents, setAgents] = useState([
-    {
-      id: 1,
-      name: 'Support Agent',
-      description: 'Automatically prioritizes support tickets and highlights the most urgent issues for faster resolution.',
-      identifier: 'support-agent-afsr1251fqt32t32r12431rf12yt65uh5',
-      icon: '🎯',
-      integration: 'ZenDesk',
-      llm: 'Claude-3-5-Sonnet',
-      customKnowledge: 'i.e feature x is in beta and only has limited number of interactions, any feedback related can be stored for review.',
-      exposure: true,
-      greeting: 'How can I help?',
-      prompt: 'Identify tickets and issues related to support through the enabled integrations. Provide solutions and suggestions resolve customer pain points. Keep a friendly and helpful tone.'
-    },
-    {
-      id: 2,
-      name: 'GTM Strategy Agent',
-      description: 'Automatically prioritizes support tickets and highlights the most urgent issues for faster resolution.',
-      identifier: 'gtm-strategy-agent-afsr1251fqt32t32r12431rf12yt65uh5',
-      icon: '🎯',
-      integration: 'ZenDesk',
-      llm: 'Claude-3-5-Sonnet',
-      customKnowledge: 'Marketing strategies and campaign data.',
-      exposure: true,
-      greeting: 'How can I help?',
-      prompt: 'Focus on go-to-market strategies and provide insights.'
-    }
-  ]);
-
-  const [conversations] = useState<Conversation[]>([
-    {
-      id: 1,
-      agent: 'Support Agent',
-      dateTime: '20 Sep, 25 at 04:30',
-      user: 'Johndoe@gmail.com'
-    },
-    {
-      id: 2,
-      agent: 'Support Agent',
-      dateTime: '21 Sep, 25 at 09:15',
-      user: 'janesmith@email.com'
-    },
-    {
-      id: 3,
-      agent: 'Support Agent',
-      dateTime: '22 Sep, 25 at 11:00',
-      user: 'alexbrown@techmail.com'
-    },
-    {
-      id: 4,
-      agent: 'Support Agent',
-      dateTime: '23 Sep, 25 at 15:45',
-      user: 'maryjohnson@service.com'
-    },
-    {
-      id: 5,
-      agent: 'Support Agent',
-      dateTime: '24 Sep, 25 at 12:30',
-      user: 'davidlee@designhub.com'
-    }
-  ]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const router = useRouter();
+  const { user } = useAuth();
+
+  const API_URL = "http://135.222.251.229:8000";
+  const USER_ID = user?.id || "user-123"; // This should come from your auth context/state
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [formData, setFormData] = useState({
@@ -97,7 +51,7 @@ export default function AgentPage() {
     icon: '🎯',
     integration: 'ZenDesk',
     llm: 'Claude-3-5-Sonnet',
-    customKnowledge: '',
+    custom_knowledge: '',
     exposure: true,
     greeting: 'How can I help?',
     prompt: ''
@@ -105,6 +59,46 @@ export default function AgentPage() {
 
   const [integrationDropdownOpen, setIntegrationDropdownOpen] = useState(false);
   const integrations = ['ZenDesk', 'Jira', 'Confluence', 'Notion', 'Slack'];
+
+  // Fetch agents on component mount
+  useEffect(() => {
+    fetchAgents();
+    fetchConversations();
+  }, []);
+
+  const fetchAgents = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/users/${USER_ID}/agents`);
+      if (response.ok) {
+        const agentsData = await response.json();
+        setAgents(agentsData);
+      } else {
+        console.error("Failed to fetch agents:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchConversations = async () => {
+    setIsLoadingConversations(true);
+    try {
+      const response = await fetch(`${API_URL}/users/${USER_ID}/agent-conversations`);
+      if (response.ok) {
+        const conversationsData = await response.json();
+        setConversations(conversationsData);
+      } else {
+        console.error("Failed to fetch conversations:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
 
   const handleCreateAgent = () => {
     setEditingAgent(null);
@@ -115,7 +109,7 @@ export default function AgentPage() {
       icon: '🎯',
       integration: 'ZenDesk',
       llm: 'Claude-3-5-Sonnet',
-      customKnowledge: '',
+      custom_knowledge: '',
       exposure: true,
       greeting: 'How can I help?',
       prompt: ''
@@ -123,7 +117,7 @@ export default function AgentPage() {
     setIsModalOpen(true);
   };
 
-  const handleViewAgent = (agentId: number) => {
+  const handleViewAgent = (agentId: string) => {
     const agent = agents.find(a => a.id === agentId);
     if (agent) {
       setEditingAgent(agent);
@@ -134,7 +128,7 @@ export default function AgentPage() {
         icon: agent.icon,
         integration: agent.integration,
         llm: agent.llm,
-        customKnowledge: agent.customKnowledge,
+        custom_knowledge: agent.custom_knowledge,
         exposure: agent.exposure,
         greeting: agent.greeting,
         prompt: agent.prompt
@@ -143,39 +137,99 @@ export default function AgentPage() {
     }
   };
 
-  const handleDeleteAgent = (agentId: number) => {
+  const handleDeleteAgent = async (agentId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this agent? This action cannot be undone.');
     if (confirmDelete) {
-      setAgents(agents.filter(a => a.id !== agentId));
+      try {
+        const response = await fetch(`${API_URL}/agents/${agentId}?user_id=${USER_ID}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          // Remove agent from local state
+          setAgents(agents.filter(a => a.id !== agentId));
+        } else {
+          console.error("Failed to delete agent:", response.statusText);
+          alert("Failed to delete agent. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error deleting agent:", error);
+        alert("Error deleting agent. Please try again.");
+      }
     }
   };
 
-  const handleSaveAgent = () => {
-    if (editingAgent) {
-      // Update existing agent
-      setAgents(agents.map(agent =>
-        agent.id === editingAgent.id
-          ? { ...agent, ...formData }
-          : agent
-      ));
-    } else {
-      // Create new agent
-      const newAgent = {
-        id: Date.now(),
-        ...formData,
-        identifier: `${formData.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
-      };
-      setAgents([...agents, newAgent]);
+  const handleSaveAgent = async () => {
+    try {
+      if (editingAgent) {
+        // Update existing agent
+        const response = await fetch(`${API_URL}/agents/${editingAgent.id}?user_id=${USER_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            description: formData.description,
+            icon: formData.icon,
+            integration: formData.integration,
+            llm: formData.llm,
+            custom_knowledge: formData.custom_knowledge,
+            exposure: formData.exposure,
+            greeting: formData.greeting,
+            prompt: formData.prompt
+          })
+        });
+
+        if (response.ok) {
+          const updatedAgent = await response.json();
+          setAgents(agents.map(agent =>
+            agent.id === editingAgent.id ? updatedAgent : agent
+          ));
+        } else {
+          throw new Error("Failed to update agent");
+        }
+      } else {
+        // Create new agent
+        const response = await fetch(`${API_URL}/agents?user_id=${USER_ID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            description: formData.description,
+            icon: formData.icon,
+            integration: formData.integration,
+            llm: formData.llm,
+            custom_knowledge: formData.custom_knowledge,
+            exposure: formData.exposure,
+            greeting: formData.greeting,
+            prompt: formData.prompt
+          })
+        });
+
+        if (response.ok) {
+          const newAgent = await response.json();
+          setAgents([newAgent, ...agents]);
+        } else {
+          throw new Error("Failed to create agent");
+        }
+      }
+
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving agent:", error);
+      alert("Failed to save agent. Please try again.");
     }
-    setIsModalOpen(false);
   };
 
-  const handleStartConversation = (agentId: number) => {
-    console.log('Start conversation with agent:', agentId);
+  const handleStartConversation = (agentId: string) => {
+    router.push(`/agents/talk?agent_id=${agentId}`);
   };
 
-  const handleViewTranscript = (conversationId: number) => {
-    console.log('View transcript:', conversationId);
+  const handleViewTranscript = (conversationId: string) => {
+    router.push(`/agents/talk?conversation_id=${conversationId}`);
   };
 
   const handleCopyKey = () => {
@@ -237,7 +291,7 @@ export default function AgentPage() {
                 </div>
 
                 <button
-                  onClick={() => router.push("/agents/talk")}
+                  onClick={() => handleStartConversation(agent.id)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
                 >
                   <MessageCircle size={18} />
@@ -282,7 +336,7 @@ export default function AgentPage() {
                     </div>
                     <div className="col-span-2 flex justify-end">
                       <Link
-                        href={`/agents/talk?id=${conversation.id}`}
+                        href={`/agents/talk?conversation_id=${conversation.id}`}
                         className="text-sm text-gray-600 hover:text-gray-900 font-medium"
                       >
                         Transcript
@@ -428,8 +482,8 @@ export default function AgentPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Custom Knowledge Input</label>
                       <p className="text-xs text-gray-500 mb-2">Input your text-based knowledge here</p>
                       <textarea
-                        value={formData.customKnowledge}
-                        onChange={(e) => setFormData({ ...formData, customKnowledge: e.target.value })}
+                        value={formData.custom_knowledge}
+                        onChange={(e) => setFormData({ ...formData, custom_knowledge: e.target.value })}
                         placeholder="i.e feature x is in beta and only has limited number of interactions, any feedback related can be stored for review."
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-[#202020]"
