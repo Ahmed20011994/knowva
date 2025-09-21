@@ -342,9 +342,18 @@ export default function Dashboard() {
       <main className="flex-1 p-8 md:p-12 space-y-12">
         {/* Welcome Section */}
         <section className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Meet Knowva
-          </h1>
+          {/* Combined Heading and Logo */}
+              <div className="flex items-center justify-center mb-4">
+                {" "}
+                {/* Added flex, items-center, justify-center for horizontal alignment and vertical centering */}
+                <h2 className="text-4xl font-bold text-[#202020]">Meet</h2>
+                {/* Logo Image */}
+                <img
+                  src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+                  alt="Knowva Logo"
+                  className="w-[120px] aspect-[89/20] ml-2" // Added ml-2 for spacing
+                />
+              </div>
           <p className="text-gray-600 text-lg leading-relaxed max-w-2xl mx-auto">
             Say hello to your connected brain. Knowva helps you search, explore, and understand everything across your tools — all from one place.
           </p>

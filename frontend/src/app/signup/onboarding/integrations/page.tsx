@@ -22,19 +22,19 @@ const integrations: Integration[] = [
     id: "jira",
     name: "Jira",
     description: "Connect tickets and project updates to keep work in sync.",
-    icon: "📘",
+    icon: "https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/d696dfcb-01a8-5cbd-a5c6-4a9629c30b60.png",
   },
   {
     id: "confluence",
     name: "Confluence",
     description: "Sync specs, notes, and docs for easy access in one place.",
-    icon: "📄",
+    icon: "https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/6b3d8e75-64c5-f04e-0a7d-bcea254768bb.png",
   },
   {
     id: "zendesk",
     name: "Zendesk",
     description: "Link support tickets and feedback directly to your projects.",
-    icon: "🎧",
+    icon: "https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/d69647d2-9575-b231-657c-e71ceaa80fa0.png",
   },
 ];
 
@@ -98,7 +98,18 @@ export default function IntegrationsPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="p-4">
-        <h1 className="text-xl font-bold text-purple-600">Knowva</h1>
+        {/* Header */}
+        {/* Logo Image */}
+        <div className="flex items-center">
+          <img
+            src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+            alt="Knowva Logo"
+            className="w-[89px] h-[20px] aspect-[89/20]"
+          />
+          <Link href="/signup/onboarding" className="px-4 py-1 mx-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+            🔙
+          </Link>
+        </div>
       </header>
       <hr />
 
@@ -122,13 +133,18 @@ export default function IntegrationsPage() {
                   key={integration.id}
                   className="flex items-center justify-between border rounded-lg p-4 shadow-sm"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{integration.icon}</span>
+                 <div className="flex items-center gap-3">
+                    { }
+                    <img
+                      src={integration.icon}
+                      alt={`${integration.name} icon`}
+                      className="w-8 h-8 object-contain"
+                    />
                     <div>
                       <h3 className="font-semibold text-[#202020]">
                         {integration.name}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600" style={{ marginRight: '3px' }}>
                         {integration.description}
                       </p>
                     </div>

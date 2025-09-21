@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/libs/auth";
+import Link from "next/link";
 
 type Team = {
   id: string;
@@ -178,9 +179,20 @@ export default function InviteTeammatesPage() {
   // If not loading, show the main invite page
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
+       {/* Header */}
       <header className="p-4">
-        <h1 className="text-xl font-bold text-purple-600">Knowva</h1>
+        {/* Header */}
+      {/* Logo Image */}
+          <div className="flex items-center">
+            <img
+              src="https://mcusercontent.com/7e625ac7d88971ac43e4120d8/images/4be4d70d-b665-8547-1b92-c162f1a99aa2.png"
+              alt="Knowva Logo"
+              className="w-[89px] h-[20px] aspect-[89/20]"
+            />
+            <Link href="/signup/onboarding/teams" className="px-4 py-1 mx-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+            🔙
+          </Link>
+          </div>
       </header>
       <hr />
 
