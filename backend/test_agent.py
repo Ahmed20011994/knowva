@@ -86,10 +86,10 @@ def product_management_agent(
             raise RuntimeError(f"Missing required setting: {k}")
         return val
 
-    _base = "https://spursol.atlassian.net"
-    _email = "ahmed.shaikh@spursol.com"
-    _token = "ATATT3xFfGF01Ss5nb1GwbXHduWvpOPrEwjCbLUvbNbJ__NfZiXVGpm8zjXRDNzGxd6Bdpxe8o5hbAc0LcUEuqDA3uctFVi_PVk_b1V8pMcSgzVFYUjitO28d6zTy9J1QiJQNnGV-hsOC6m9f5XtUMEy90sNEkcAkHpZPB7-OUdsRPk62mbmo0A=F7EC5289"
-    _ant = "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"
+    _base = os.getenv("JIRA_URL")
+    _email = os.getenv("JIRA_USERNAME")
+    _token = os.getenv("JIRA_API_TOKEN")
+    _ant = os.getenv("ANTHROPIC_API_KEY")
 
     logger.info("Starting product_management_agent")
     logger.info("Jira base: %s | Project: %s | Boards: %s | Sprint: %s", _base, project_key, list(board_ids), sprint_id)
