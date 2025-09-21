@@ -218,11 +218,10 @@ async def get_conversations_for_user(user_id: str) -> List[Conversation]:
     return conversations
 
 async def get_or_create_conversation_for_user(user_id: str) -> Conversation:
+    """Create a new conversation for a user"""
     db = get_database()
-    conv_data = await db.conversations.find_one({"user_id": user_id})
-    if conv_data:
-        return Conversation(**conv_data)
 
+    # Always create a new conversation
     new_conv = Conversation(user_id=user_id)
     # Use model_dump to convert to dict, ensuring aliases and encoders are used
     insert_data = new_conv.model_dump(by_alias=True, exclude=['id'])

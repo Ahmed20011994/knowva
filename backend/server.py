@@ -116,7 +116,6 @@ class ConversationRequest(BaseModel):
     user_id: str
     conversation_id: Optional[str] = None
     server_names: Optional[List[str]] = None
-    include_history: bool = True
     enable_chaining: Optional[bool] = True
 
 
@@ -840,34 +839,42 @@ async def get_server_metric(server_name: str):
 # Conversation Management
 @app.post("/conversations/query", response_model=ConversationResponse)
 async def query_with_conversation(request: ConversationRequest):
-    """Process query with conversation history management"""
+    """Process query with conversation history management using MongoDB"""
     if not manager:
         raise HTTPException(status_code=503, detail="Manager not initialized")
 
-    conversation_id = request.conversation_id or str(uuid.uuid4())
-
-    # Get or create conversation
-    if conversation_id not in conversations:
-        conversations[conversation_id] = []
-
-    # Add user message to conversation
-    user_message = ConversationMessage(
-        role="user",
-        content=request.query
-    )
-    conversations[conversation_id].append(user_message)
-
-    # Process query
     try:
+        # Get or create conversation for the user
+        if request.conversation_id:
+            # If conversation_id is provided, get existing conversation
+            conversation = await get_conversation(request.conversation_id)
+            if not conversation:
+                raise HTTPException(status_code=404, detail="Conversation not found")
+            if conversation.user_id != request.user_id:
+                raise HTTPException(status_code=403, detail="Access denied to this conversation")
+        else:
+            # Create a new conversation for the user
+            conversation = await get_or_create_conversation_for_user(request.user_id)
+
+        # Create user message
+        user_message = DbMessage(
+            role="user",
+            content=request.query
+        )
+
+        # Add user message to conversation
+        await add_message_to_conversation(conversation.id, user_message)
+
+        # Process query
         servers_to_use = request.server_names or manager.get_connected_servers()
         if not servers_to_use:
             raise HTTPException(status_code=400, detail="No servers available")
 
-        # Include conversation history if requested
-        if request.include_history and len(conversations[conversation_id]) > 1:
+        # Always build context from conversation history
+        if len(conversation.messages) > 0:
             # Build context from conversation history
             context = "Previous conversation:\n"
-            for msg in conversations[conversation_id][:-1]:  # Exclude current message
+            for msg in conversation.messages:
                 context += f"{msg.role}: {msg.content}\n"
             full_query = f"{context}\nCurrent question: {request.query}"
         else:
@@ -875,23 +882,37 @@ async def query_with_conversation(request: ConversationRequest):
 
         response = await manager.process_query_with_claude(full_query, servers_to_use, request.enable_chaining)
 
-        # Add assistant response to conversation
-        assistant_message = ConversationMessage(
+        # Create assistant message
+        assistant_message = DbMessage(
             role="assistant",
             content=response,
             servers_used=servers_to_use
         )
-        conversations[conversation_id].append(assistant_message)
+
+        # Add assistant response to conversation
+        await add_message_to_conversation(conversation.id, assistant_message)
+
+        # Create response message in the original ConversationMessage format
+        response_message = ConversationMessage(
+            id=assistant_message.id,
+            timestamp=assistant_message.timestamp,
+            role=assistant_message.role,
+            content=assistant_message.content,
+            servers_used=assistant_message.servers_used,
+            tools_called=assistant_message.tools_called
+        )
 
         system_stats["total_queries"] += 1
 
         return ConversationResponse(
-            conversation_id=conversation_id,
-            message=assistant_message,
+            conversation_id=str(conversation.id),
+            message=response_message,
             response=response,
             servers_used=servers_to_use
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
