@@ -1,0 +1,14 @@
+[project]
+name = "mcp-server"
+version = "0.1.0"
+description = "FastAPI server for multiple MCP connections"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40.0",
+    "mcp>=1.1.1",
+    "python-dotenv>=1.0.1",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "pydantic>=2.0.0",
+]

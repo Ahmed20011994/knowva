@@ -1,0 +1,145 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  # Manual trigger
+  workflow_dispatch:
+
+env:
+  # Change these to match your Docker Hub username and desired image names
+  DOCKERHUB_USERNAME: ahmed2094
+  BACKEND_IMAGE_NAME: knowvaback
+  FRONTEND_IMAGE_NAME: knowvafront
+  ZENDESK_MCP_IMAGE_NAME: zendesk-mcp
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ahmed2094
+        password: dckr_pat_mlkR9vmCTzZFk9Im_v7Sm3FOPYc
+        
+    - name: Extract metadata for backend
+      id: meta-backend
+      uses: docker/metadata-action@v5
+      with:
+        images: ahmed2094/knowvaback
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: ${{ steps.meta-backend.outputs.tags }}
+        labels: ${{ steps.meta-backend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ahmed2094
+        password: dckr_pat_mlkR9vmCTzZFk9Im_v7Sm3FOPYc
+        
+    - name: Extract metadata for frontend
+      id: meta-frontend
+      uses: docker/metadata-action@v5
+      with:
+        images: ahmed2094/knowvafront
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: ${{ steps.meta-frontend.outputs.tags }}
+        labels: ${{ steps.meta-frontend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  build-zendesk-mcp:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ahmed2094
+        password: dckr_pat_mlkR9vmCTzZFk9Im_v7Sm3FOPYc
+        
+    - name: Extract metadata for Zendesk MCP
+      id: meta-zendesk-mcp
+      uses: docker/metadata-action@v5
+      with:
+        images: ahmed2094/zendesk-mcp
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Zendesk MCP image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./zendesk-mcp
+        file: ./zendesk-mcp/Dockerfile
+        push: true
+        tags: ${{ steps.meta-zendesk-mcp.outputs.tags }}
+        labels: ${{ steps.meta-zendesk-mcp.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Optional: Create a combined job that runs after all builds succeed
+  notify-success:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, build-zendesk-mcp]
+    if: success()
+    
+    steps:
+    - name: Notify success
+      run: |
+        echo "✅ All images built and pushed successfully!"
+        echo "Backend: ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}"
+        echo "Frontend: ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}"
+        echo "Zendesk MCP: ${{ env.DOCKERHUB_USERNAME }}/${{ env.ZENDESK_MCP_IMAGE_NAME }}"

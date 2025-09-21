@@ -1,0 +1,114 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: hackathon-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=knowva
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    networks: [hackathon-network]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hackathon-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CONFLUENCE_URL=${CONFLUENCE_URL}
+      - CONFLUENCE_USERNAME=${CONFLUENCE_USERNAME}
+      - CONFLUENCE_API_TOKEN=${CONFLUENCE_API_TOKEN}
+      - JIRA_URL=${JIRA_URL}
+      - JIRA_USERNAME=${JIRA_USERNAME}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+      - ATLASSIAN_MCP_URL=${ATLASSIAN_MCP_URL}
+      - ZENDESK_MCP_URL=${ZENDESK_MCP_URL}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - FILESYSTEM_ROOT=${FILESYSTEM_ROOT:-/tmp}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MONGODB_URL=mongodb+srv://walle:8EkOE0lxzRvIEYV7@cluster0.08cunpc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - DATABASE_NAME=knowva
+      - JWT_SECRET_KEY=knowva-super-secret-jwt-key-change-this-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - atlassian-mcp
+      - zendesk-mcp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks: [hackathon-network]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hackathon-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks: [hackathon-network]
+    depends_on: [backend]
+
+  atlassian-mcp:
+    image: ghcr.io/sooperset/mcp-atlassian:latest
+    container_name: atlassian-mcp
+    # Publish the HTTP transport port out to your host
+    ports:
+      - "9000:9000"
+    # Either use environment: (like below) OR use env_file: .env
+    environment:
+      - CONFLUENCE_URL=${CONFLUENCE_URL}
+      - CONFLUENCE_USERNAME=${CONFLUENCE_USERNAME}
+      - CONFLUENCE_API_TOKEN=${CONFLUENCE_API_TOKEN}
+      - JIRA_URL=${JIRA_URL}
+      - JIRA_USERNAME=${JIRA_USERNAME}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+    # Run the server with streamable-http transport on port 9000, verbose logs
+    command: ["--transport", "sse", "--port", "9000", "-vv"]
+    restart: unless-stopped
+    networks: [hackathon-network]
+
+  zendesk-mcp:
+    build:
+      context: ./zendesk-mcp
+      dockerfile: Dockerfile
+    container_name: zendesk-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - ZENDESK_SUBDOMAIN=${ZENDESK_SUBDOMAIN}
+      - ZENDESK_EMAIL=${ZENDESK_EMAIL}
+      - ZENDESK_API_TOKEN=${ZENDESK_API_TOKEN}
+    restart: unless-stopped
+    networks: [hackathon-network]
+
+volumes:
+  logs: { driver: local }
+  uploads: { driver: local }
+  mongodb_data: { driver: local }
+
+networks:
+  hackathon-network:
+    driver: bridge
