@@ -375,6 +375,7 @@ class MCPConnectionManager:
 {chaining_guidance if enable_chaining else "For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially."}
 
 **Response Format:**
+- Do not give output in Markdown format
 - Start with a clear, direct answer to the user's question
 - Provide supporting details and evidence from the tools
 - Include relevant context and business implications

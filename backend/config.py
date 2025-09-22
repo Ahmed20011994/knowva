@@ -18,7 +18,7 @@ class MCPServerConfig(BaseModel):
 class ServerConfig(BaseModel):
     """Main server configuration"""
     anthropic_api_key: str = Field(..., description="Anthropic API key")
-    claude_model: str = Field("claude-3-5-sonnet-20241022", description="Claude model to use")
+    claude_model: str = Field("claude-sonnet-4-20250514", description="Claude model to use")
     max_tokens: int = Field(1000, description="Maximum tokens for Claude responses")
     log_level: str = Field("INFO", description="Logging level")
     log_tool_calls: bool = Field(True, description="Whether to log detailed tool call information")
