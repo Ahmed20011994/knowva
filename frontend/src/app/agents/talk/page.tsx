@@ -93,13 +93,15 @@ function AgentTalkPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [agent, setAgent] = useState<Agent | null>(null);
-  const [conversation, setConversation] = useState<AgentConversation | null>(null);
+  const [conversation, setConversation] = useState<AgentConversation | null>(
+    null
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingAgent, setIsLoadingAgent] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = "http://localhost:8000";
+  const API_URL = "http://135.222.251.229:8000";
   const USER_ID = "user-123"; // This should come from your auth context/state
 
   const agentId = searchParams.get("agent_id");
@@ -114,14 +116,18 @@ function AgentTalkPageContent() {
 
         if (conversationId) {
           // Load existing conversation
-          const convResponse = await fetch(`${API_URL}/agent-conversations/${conversationId}`);
+          const convResponse = await fetch(
+            `${API_URL}/agent-conversations/${conversationId}`
+          );
           if (convResponse.ok) {
             const convData = await convResponse.json();
             setConversation(convData);
             setMessages(convData.messages || []);
 
             // Load the agent for this conversation
-            const agentResponse = await fetch(`${API_URL}/agents/${convData.agent_id}`);
+            const agentResponse = await fetch(
+              `${API_URL}/agents/${convData.agent_id}`
+            );
             if (agentResponse.ok) {
               const agentData = await agentResponse.json();
               setAgent(agentData);
@@ -174,7 +180,7 @@ function AgentTalkPageContent() {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
     // Add thinking indicator
     const thinkingMessage: ChatMessage = {
@@ -183,14 +189,14 @@ function AgentTalkPageContent() {
       content: "...",
       timestamp: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, thinkingMessage]);
+    setMessages((prev) => [...prev, thinkingMessage]);
 
     try {
       const requestBody = {
         query: messageContent,
         user_id: USER_ID,
         user_email: "user@example.com", // This should come from auth
-        conversation_id: conversation?.id
+        conversation_id: conversation?.id,
       };
 
       const response = await fetch(`${API_URL}/agents/${agent.id}/chat`, {
@@ -217,7 +223,9 @@ function AgentTalkPageContent() {
         tools_called: data.message.tools_called,
       };
 
-      setMessages((prev) => prev.filter((msg) => msg.id !== "thinking").concat([aiMessage]));
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== "thinking").concat([aiMessage])
+      );
 
       // Update conversation ID if this was the first message
       if (!conversation && data.conversation_id) {
@@ -230,7 +238,6 @@ function AgentTalkPageContent() {
           created_at: new Date().toISOString(),
         });
       }
-
     } catch (err) {
       console.error("Error sending message:", err);
 
@@ -238,11 +245,14 @@ function AgentTalkPageContent() {
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error processing your message. Please try again.",
+        content:
+          "Sorry, I encountered an error processing your message. Please try again.",
         timestamp: new Date().toISOString(),
       };
 
-      setMessages((prev) => prev.filter((msg) => msg.id !== "thinking").concat([errorMessage]));
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== "thinking").concat([errorMessage])
+      );
     } finally {
       setIsLoading(false);
     }
@@ -313,7 +323,9 @@ function AgentTalkPageContent() {
                   {agent.icon}
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-gray-900">{agent.name}</h1>
+                  <h1 className="text-lg font-semibold text-gray-900">
+                    {agent.name}
+                  </h1>
                   <p className="text-sm text-gray-500">{agent.description}</p>
                 </div>
               </div>
@@ -329,26 +341,43 @@ function AgentTalkPageContent() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {messages.map((message, index) => (
-              <div key={message.id || index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {message.role === 'assistant' && (
+              <div
+                key={message.id || index}
+                className={`flex gap-3 ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {message.role === "assistant" && (
                   <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                     <Bot size={16} className="text-purple-600" />
                   </div>
                 )}
 
-                <div className={`max-w-2xl ${
-                  message.role === 'user' 
-                    ? 'bg-purple-600 text-white rounded-lg px-4 py-3' 
-                    : 'bg-gray-50 rounded-lg px-4 py-3'
-                }`}>
+                <div
+                  className={`max-w-2xl ${
+                    message.role === "user"
+                      ? "bg-purple-600 text-white rounded-lg px-4 py-3"
+                      : "bg-gray-50 rounded-lg px-4 py-3"
+                  }`}
+                >
                   {message.content === "..." ? (
                     <div className="flex items-center space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
                     </div>
                   ) : (
-                    <div className={`whitespace-pre-wrap ${message.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                    <div
+                      className={`whitespace-pre-wrap ${
+                        message.role === "user" ? "text-white" : "text-gray-800"
+                      }`}
+                    >
                       {message.content}
                     </div>
                   )}
@@ -356,13 +385,13 @@ function AgentTalkPageContent() {
                   {message.servers_used && message.servers_used.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <p className="text-xs text-gray-500">
-                        Connected to: {message.servers_used.join(', ')}
+                        Connected to: {message.servers_used.join(", ")}
                       </p>
                     </div>
                   )}
                 </div>
 
-                {message.role === 'user' && (
+                {message.role === "user" && (
                   <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                     <User size={16} className="text-gray-600" />
                   </div>
@@ -388,16 +417,18 @@ function AgentTalkPageContent() {
 // Wrapper with Suspense boundary
 export default function AgentTalkPage() {
   return (
-    <Suspense fallback={
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-purple-200 rounded-full animate-spin border-t-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-purple-200 rounded-full animate-spin border-t-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
           </div>
-        </div>
-      </DashboardLayout>
-    }>
+        </DashboardLayout>
+      }
+    >
       <AgentTalkPageContent />
     </Suspense>
   );
