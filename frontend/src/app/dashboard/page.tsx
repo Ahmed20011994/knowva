@@ -16,8 +16,9 @@ type Integration = {
 };
 
 export default function Dashboard() {
-  const [isIntegrationsDropdownOpen, setIsIntegrationsDropdownOpen] = useState(false);
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>(['ZenDesk']);
+  // Chat state
+  const [prompt, setPrompt] = useState("");
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
   
   // Team management state
   const [teams, setTeams] = useState<Team[]>([]);
@@ -34,14 +35,6 @@ export default function Dashboard() {
   // Available integrations list - loaded from API
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const { integrations: allowedIntegrations, loading: integrationsLoading } = useAllowedIntegrations();
-
-  const handleIntegrationToggle = (integration: string) => {
-    setSelectedIntegrations((prevSelected) =>
-      prevSelected.includes(integration)
-        ? prevSelected.filter((item) => item !== integration)
-        : [...prevSelected, integration]
-    );
-  };
 
   // Load teams on component mount
   useEffect(() => {
@@ -72,13 +65,8 @@ export default function Dashboard() {
       }));
       
       setIntegrations(integrationsData);
-      
-      // Set initial selected integrations based on what's available
-      if (selectedIntegrations.length === 0) {
-        setSelectedIntegrations([allowedIntegrations[0]]);
-      }
     }
-  }, [allowedIntegrations, selectedIntegrations.length]);
+  }, [allowedIntegrations]);
 
   // Open modal for new team
   const handleAddNew = () => {
@@ -187,120 +175,7 @@ export default function Dashboard() {
     }
   };
 
-  // Dynamic suggestions based on user data
-  const getDynamicSuggestions = () => {
-    const suggestions = [];
-    console.log('Getting dynamic suggestions...', { teams, selectedIntegrations, user });
-    
-    // Base suggestions based on teams
-    if (teams.length > 0) {
-      const teamNames = teams.map(team => team.name);
-      suggestions.push(
-        { 
-          title: `Check updates on ${teamNames[0]} team`, 
-          action: 'team-updates',
-          data: teams[0]
-        }
-      );
-      
-      if (teamNames.length > 1) {
-        suggestions.push(
-          { 
-            title: `Review ${teamNames[1]} progress`, 
-            action: 'team-progress',
-            data: teams[1]
-          }
-        );
-      }
-    }
 
-    // Integration-based suggestions
-    if (selectedIntegrations.length > 0) {
-      if (selectedIntegrations.includes('Jira')) {
-        suggestions.push(
-          { 
-            title: 'Review Jira tickets', 
-            action: 'jira-review',
-            data: { integration: 'jira' }
-          }
-        );
-      }
-      
-      if (selectedIntegrations.includes('Confluence')) {
-        suggestions.push(
-          { 
-            title: 'Update Confluence docs', 
-            action: 'confluence-update',
-            data: { integration: 'confluence' }
-          }
-        );
-      }
-    }
-
-    // User role-based suggestions
-    if (user?.role === 'admin') {
-      suggestions.push(
-        { 
-          title: 'Review team performance', 
-          action: 'admin-review',
-          data: { type: 'performance' }
-        }
-      );
-    }
-
-    // Always ensure we have at least some suggestions
-    if (suggestions.length === 0) {
-      suggestions.push(
-        { 
-          title: 'Explore AI Chat', 
-          action: 'navigate',
-          data: { path: '/ai-chat' }
-        },
-        { 
-          title: 'Create your first team', 
-          action: 'create-team',
-          data: {}
-        },
-        { 
-          title: 'Set up integrations', 
-          action: 'setup-integrations',
-          data: {}
-        },
-        { 
-          title: 'Invite team members', 
-          action: 'navigate',
-          data: { path: '/users' }
-        }
-      );
-    }
-    
-    // Ensure we always have at least the default suggestions mixed in
-    if (suggestions.length < 4) {
-      const defaultSuggestions = [
-        { 
-          title: 'Review team insights', 
-          action: 'navigate',
-          data: { path: '/teams' }
-        },
-        { 
-          title: 'Check member activity', 
-          action: 'navigate',
-          data: { path: '/users' }
-        }
-      ];
-      
-      // Add defaults until we have 4 suggestions
-      for (const defaultSugg of defaultSuggestions) {
-        if (suggestions.length < 4 && !suggestions.some(s => s.title === defaultSugg.title)) {
-          suggestions.push(defaultSugg);
-        }
-      }
-    }
-
-    const finalSuggestions = suggestions.slice(0, 4); // Limit to 4 suggestions
-    console.log('Final suggestions:', finalSuggestions);
-    return finalSuggestions;
-  };
 
   // Handle suggestion clicks
   const handleSuggestionClick = (suggestion: any) => {
@@ -311,10 +186,7 @@ export default function Dashboard() {
       case 'create-team':
         handleAddNew();
         break;
-      case 'setup-integrations':
-        // Focus on integrations dropdown
-        setIsIntegrationsDropdownOpen(true);
-        break;
+
       case 'team-updates':
       case 'team-progress':
         // Navigate to teams page with focus on specific team
@@ -361,72 +233,38 @@ export default function Dashboard() {
 
         {/* Input Field Section */}
         <section className="relative max-w-3xl mx-auto">
-          <div className="relative p-4 rounded-xl border border-purple-300 bg-white shadow-md focus-within:ring-2 focus-within:ring-purple-500 transition-all duration-200">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+          }} className="relative p-4 rounded-xl border border-purple-300 bg-white shadow-md focus-within:ring-2 focus-within:ring-purple-500 transition-all duration-200">
             <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
               placeholder="What is the update on Project X?"
               rows={4}
               className="w-full text-lg text-gray-800 placeholder-gray-400 bg-white focus:outline-none resize-none pb-12"
             ></textarea>
 
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-              {/* Custom Integrations Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsIntegrationsDropdownOpen(!isIntegrationsDropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 font-medium text-sm transition-colors hover:bg-purple-200"
-                >
-                  <Zap size={16} />
-                  {selectedIntegrations.length === allowedIntegrations.length
-                    ? "All Integrations"
-                    : `${selectedIntegrations.length} Integrations`}
-                  <ChevronDown size={16} className={`transition-transform duration-200 ${isIntegrationsDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isIntegrationsDropdownOpen && (
-                  <div className="absolute z-10 bottom-full mb-2 left-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Integrations Added</h4>
-                    {allowedIntegrations.map((integration) => (
-                      <label key={integration} className="flex items-center space-x-2 py-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          // Fixed color to be purple
-                          className="form-checkbox accent-purple-600 h-4 w-4 text-[#823BE3] rounded focus:ring-[#823BE3]"
-                          checked={selectedIntegrations.includes(integration)}
-                          onChange={() => handleIntegrationToggle(integration)}
-                        />
-                        <span className="text-gray-800">{integration}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+            <div className="absolute bottom-4 right-4">
               {/* Send Button */}
-              <button className="flex-shrink-0 p-3 rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700">
-                <ArrowRight size={24} />
+              <button 
+                type="submit"
+                disabled={isMessageLoading || !prompt.trim()}
+                className={`flex-shrink-0 p-3 rounded-full transition-colors ${
+                  prompt.trim() && !isMessageLoading
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {isMessageLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                ) : (
+                  <ArrowRight size={24} />
+                )}
               </button>
             </div>
-          </div>
+          </form>
         </section>
         
-        {/* Continue Section */}
-        <section className="max-w-4xl mx-auto">
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">
-            Continue where you left off
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            {getDynamicSuggestions().map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="px-5 py-2 rounded-full border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-              >
-                {suggestion.title}
-              </button>
-            ))}
-          </div>
-        </section>
-
         {/* Your Teams Section */}
         <section className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">

@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${dmSans.variable}`}>
         <AuthProvider>
-          {children}
+            {children}
         </AuthProvider>
       </body>
     </html>
