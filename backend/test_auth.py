@@ -6,7 +6,7 @@ Run this after setting up MongoDB and starting the server
 import requests
 import json
 
-BASE_URL = "http://135.222.251.229:8000"
+BASE_URL = "http://134.33.240.184:8000"
 
 def test_auth_flow():
     """Test the complete authentication flow"""
@@ -143,7 +143,7 @@ def test_auth_flow():
         print("=" * 50)
         
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to server. Make sure the server is running at http://135.222.251.229:8000")
+        print("❌ Cannot connect to server. Make sure the server is running at http://134.33.240.184:8000")
     except Exception as e:
         print(f"❌ Test failed with error: {e}")
 

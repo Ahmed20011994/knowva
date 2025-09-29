@@ -693,7 +693,7 @@ function AIChatbotPageContent() {
     "Generate a roadmap",
   ];
 
-  const API_URL = "http://135.222.251.229:8000";
+  const API_URL = "http://134.33.240.184:8000";
 
   const USER_ID = user?.id; // Get actual user ID from auth context
   const USER_ROLE = user?.role; // Get actual user role from auth context

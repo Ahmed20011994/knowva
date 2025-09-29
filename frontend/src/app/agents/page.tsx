@@ -39,7 +39,7 @@ export default function AgentPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const API_URL = "http://135.222.251.229:8000";
+  const API_URL = "http://134.33.240.184:8000";
   const USER_ID = user?.id || "user-123"; // This should come from your auth context/state
 
   const [isModalOpen, setIsModalOpen] = useState(false);

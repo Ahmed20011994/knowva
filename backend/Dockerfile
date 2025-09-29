@@ -28,7 +28,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://135.222.251.229:8000/health || exit 1
+    CMD curl -f http://134.33.240.184:8000/health || exit 1
 
 # Start the application
 CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,5 +1,5 @@
 // API service for authentication and other backend calls
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'	
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'	
 
 export interface LoginRequest {
   email: string;

@@ -14,7 +14,7 @@ export const useAllowedIntegrations = () => {
       }
       
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/organization/allowed-integrations`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/organization/allowed-integrations`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -28,7 +28,7 @@ export const useAllowedIntegrations = () => {
           if (allowedIntegrations.length === 3 && 
               JSON.stringify(allowedIntegrations.sort()) === JSON.stringify(['confluence', 'jira', 'zendesk'].sort())) {
             try {
-              const fixResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/organization/fix-integrations`, {
+              const fixResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/organization/fix-integrations`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`

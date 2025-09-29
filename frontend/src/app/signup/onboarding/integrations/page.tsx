@@ -67,7 +67,7 @@ export default function IntegrationsPage() {
     setError("");
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://135.222.251.229:8000'}/auth/integrations`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://134.33.240.184:8000'}/auth/integrations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

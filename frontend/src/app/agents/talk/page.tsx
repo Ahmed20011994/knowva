@@ -101,7 +101,7 @@ function AgentTalkPageContent() {
   const [isLoadingAgent, setIsLoadingAgent] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = "http://135.222.251.229:8000";
+  const API_URL = "http://134.33.240.184:8000";
   const USER_ID = "user-123"; // This should come from your auth context/state
 
   const agentId = searchParams.get("agent_id");
